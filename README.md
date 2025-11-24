@@ -2,6 +2,8 @@
 
 Automatically creates ARM instances (VM.Standard.A1.Flex) in Oracle Cloud Infrastructure when capacity becomes available.
 
+**English Version** | [Deutsche Version](README.de.md)
+
 ## 🚀 Quick Start
 
 ```powershell
