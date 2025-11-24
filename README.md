@@ -73,6 +73,12 @@ Next steps:
 
 ## 🔧 Troubleshooting
 
+**Configuration errors on startup?**
+```powershell
+# Run setup script to configure OCIDs automatically
+.\setup.ps1
+```
+
 **OCI CLI not found after setup?**
 ```powershell
 # Restart PowerShell and try again
@@ -88,6 +94,12 @@ Networking → Virtual Cloud Networks → Create VCN
 ```
 This is normal! ARM instances are very popular.
 Keep it running - it will succeed eventually.
+```
+
+**Unicode/Emoji errors in log?**
+```
+Fixed in v1.1! Script now uses UTF-8 encoding for Windows console.
+Make sure you're using the latest version.
 ```
 
 ## 📄 License

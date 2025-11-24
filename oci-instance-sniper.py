@@ -1,10 +1,16 @@
 ﻿#!/usr/bin/env python3
 """
-OCI Instance Sniper v1.0
+OCI Instance Sniper v1.1
 Automatically attempts to create an ARM instance in OCI when capacity becomes available.
 
 Author: Dave Vaupel
-Date: 2025-11-10
+Date: 2025-11-24
+
+Changelog v1.1:
+- Fixed UTF-8 encoding for Windows console (emoji support)
+- Added configuration validation on startup
+- Added SSH key validation
+- Added OCID format validation
 """
 
 import oci
@@ -48,11 +54,17 @@ INSTANCE_NAME = "nextcloud-backup-instance"
 # LOGGING SETUP
 # ============================================================================
 
+# Configure UTF-8 encoding for Windows console
+if sys.platform == "win32":
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('oci-sniper.log'),
+        logging.FileHandler('oci-sniper.log', encoding='utf-8'),
         logging.StreamHandler(sys.stdout)
     ]
 )
@@ -119,19 +131,64 @@ def try_create_instance(compute_client, availability_domain):
         return False, None
 
 
+def validate_configuration():
+    """Validate all required configuration values before starting."""
+    errors = []
+
+    # Check OCIDs
+    if "your_compartment_id_here" in COMPARTMENT_ID:
+        errors.append("COMPARTMENT_ID is not configured")
+
+    if "your_image_id_here" in IMAGE_ID:
+        errors.append("IMAGE_ID is not configured")
+
+    if "your_subnet_id_here" in SUBNET_ID:
+        errors.append("SUBNET_ID is not configured")
+
+    # Check SSH key
+    if "your_ssh_public_key_here" in SSH_PUBLIC_KEY or len(SSH_PUBLIC_KEY.strip()) < 100:
+        errors.append("SSH_PUBLIC_KEY is not configured")
+
+    # Validate OCID format
+    if not COMPARTMENT_ID.startswith("ocid1."):
+        errors.append("COMPARTMENT_ID has invalid format (must start with 'ocid1.')")
+
+    if not IMAGE_ID.startswith("ocid1.image"):
+        errors.append("IMAGE_ID has invalid format (must start with 'ocid1.image')")
+
+    if not SUBNET_ID.startswith("ocid1.subnet"):
+        errors.append("SUBNET_ID has invalid format (must start with 'ocid1.subnet')")
+
+    if errors:
+        logger.error("❌ Configuration errors found:")
+        for error in errors:
+            logger.error(f"   - {error}")
+        logger.error("")
+        logger.error("Please run setup.ps1 first or manually configure the script:")
+        logger.error("   powershell -ExecutionPolicy Bypass -File setup.ps1")
+        return False
+
+    return True
+
+
 def main():
     """Main function to continuously attempt instance creation."""
-    
+
     logger.info("=" * 80)
-    logger.info("OCI Instance Sniper v1.0 - Starting")
+    logger.info("OCI Instance Sniper v1.1 - Starting")
     logger.info("=" * 80)
+
+    # Validate configuration
+    if not validate_configuration():
+        sys.exit(1)
+
     logger.info(f"Target Shape: {SHAPE}")
     logger.info(f"Target Config: {OCPUS} OCPUs, {MEMORY_IN_GBS} GB RAM")
     logger.info(f"Availability Domains: {', '.join(AVAILABILITY_DOMAINS)}")
     logger.info(f"Retry Delay: {RETRY_DELAY_SECONDS} seconds")
     logger.info(f"Max Attempts: {MAX_ATTEMPTS}")
     logger.info("=" * 80)
-    
+
     # Initialize OCI config and compute client
     try:
         config = oci.config.from_file("~/.oci/config", CONFIG_PROFILE)
