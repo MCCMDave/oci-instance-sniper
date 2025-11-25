@@ -2,7 +2,7 @@
   "instance_name": "oci-instance",
   "ocpus": 2,
   "memory_in_gbs": 12,
-  "image": "ubuntu",
+  "image": "ubuntu24",
   "retry_delay_seconds": 60,
   "max_attempts": 1440,
   "region": "eu-frankfurt-1",

@@ -106,8 +106,18 @@ $TRANSLATIONS = @{
         region_phoenix = "Phoenix USA (us-phoenix-1)"
 
         # Images
-        image_ubuntu = "Ubuntu 22.04 LTS"
-        image_oracle = "Oracle Linux 8"
+        image_ubuntu24 = "Ubuntu 24.04 LTS (recommended)"
+        image_oracle10 = "Oracle Linux 10 (latest)"
+        image_debian = "Debian 12"
+        image_more = "More options..."
+        image_ubuntu22 = "Ubuntu 22.04 LTS"
+        image_ubuntu20 = "Ubuntu 20.04 LTS"
+        image_oracle9 = "Oracle Linux 9"
+        image_oracle8 = "Oracle Linux 8"
+        image_rocky9 = "Rocky Linux 9"
+        image_rocky8 = "Rocky Linux 8"
+        image_rhel9 = "RHEL 9"
+        image_rhel8 = "RHEL 8"
 
         # Status messages
         starting_fg = "Starting script in foreground..."
@@ -192,8 +202,18 @@ $TRANSLATIONS = @{
         region_phoenix = "Phoenix USA (us-phoenix-1)"
 
         # Images
-        image_ubuntu = "Ubuntu 22.04 LTS"
-        image_oracle = "Oracle Linux 8"
+        image_ubuntu24 = "Ubuntu 24.04 LTS (recommended)"
+        image_oracle10 = "Oracle Linux 10 (latest)"
+        image_debian = "Debian 12"
+        image_more = "More options..."
+        image_ubuntu22 = "Ubuntu 22.04 LTS"
+        image_ubuntu20 = "Ubuntu 20.04 LTS"
+        image_oracle9 = "Oracle Linux 9"
+        image_oracle8 = "Oracle Linux 8"
+        image_rocky9 = "Rocky Linux 9"
+        image_rocky8 = "Rocky Linux 8"
+        image_rhel9 = "RHEL 9"
+        image_rhel8 = "RHEL 8"
 
         # Status messages
         starting_fg = "Starte Skript im Vordergrund..."
@@ -370,12 +390,43 @@ function Show-ConfigMenu {
             "6" {
                 Clear-Host
                 Write-Host "$(Get-Translation 'prompt_image'):" -ForegroundColor Cyan
-                Write-Host "  1. $(Get-Translation 'image_ubuntu')"
-                Write-Host "  2. $(Get-Translation 'image_oracle')"
-                $imageChoice = Read-Host "Choice (1-2)"
-                if ($imageChoice -eq "1") { $config.image = "ubuntu" }
-                elseif ($imageChoice -eq "2") { $config.image = "oracle" }
-                if ($imageChoice -in @("1","2")) {
+                Write-Host "  1. $(Get-Translation 'image_ubuntu24')"
+                Write-Host "  2. $(Get-Translation 'image_oracle10')"
+                Write-Host "  3. $(Get-Translation 'image_debian')"
+                Write-Host "  4. $(Get-Translation 'image_more')"
+                $imageChoice = Read-Host "Choice (1-4)"
+
+                if ($imageChoice -eq "1") { $config.image = "ubuntu24" }
+                elseif ($imageChoice -eq "2") { $config.image = "oracle10" }
+                elseif ($imageChoice -eq "3") { $config.image = "debian12" }
+                elseif ($imageChoice -eq "4") {
+                    # More options submenu
+                    Clear-Host
+                    Write-Host "$(Get-Translation 'image_more')" -ForegroundColor Cyan
+                    Write-Host "  1. $(Get-Translation 'image_ubuntu22')"
+                    Write-Host "  2. $(Get-Translation 'image_ubuntu20')"
+                    Write-Host "  3. $(Get-Translation 'image_oracle9')"
+                    Write-Host "  4. $(Get-Translation 'image_oracle8')"
+                    Write-Host "  5. $(Get-Translation 'image_rocky9')"
+                    Write-Host "  6. $(Get-Translation 'image_rocky8')"
+                    Write-Host "  7. $(Get-Translation 'image_rhel9')"
+                    Write-Host "  8. $(Get-Translation 'image_rhel8')"
+                    $moreChoice = Read-Host "Choice (1-8)"
+
+                    switch ($moreChoice) {
+                        "1" { $config.image = "ubuntu22" }
+                        "2" { $config.image = "ubuntu20" }
+                        "3" { $config.image = "oracle9" }
+                        "4" { $config.image = "oracle8" }
+                        "5" { $config.image = "rocky9" }
+                        "6" { $config.image = "rocky8" }
+                        "7" { $config.image = "rhel9" }
+                        "8" { $config.image = "rhel8" }
+                    }
+                    $imageChoice = $moreChoice  # For validation below
+                }
+
+                if ($imageChoice -in @("1","2","3","4","5","6","7","8")) {
                     Save-Config $config
                     Write-Host "$(Get-Translation 'config_saved')" -ForegroundColor Green
                     Start-Sleep -Seconds 1
