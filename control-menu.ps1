@@ -8,11 +8,42 @@
 # - Better integration with main Python script
 
 # ============================================================================
-# CONFIGURATION
+# LANGUAGE SELECTION
 # ============================================================================
 
-# Language: "EN" or "DE"
-$LANGUAGE = "EN"
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
+Write-Host ""
+Write-Host "============================================================================" -ForegroundColor Cyan
+Write-Host "      OCI INSTANCE SNIPER - CONTROL MENU" -ForegroundColor Cyan
+Write-Host "============================================================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Select Language / Sprache wählen:" -ForegroundColor Yellow
+Write-Host "  1. English" -ForegroundColor White
+Write-Host "  2. Deutsch" -ForegroundColor White
+Write-Host "  0. Exit / Beenden" -ForegroundColor White
+Write-Host ""
+
+$langChoice = Read-Host "Your choice / Deine Wahl (1/2/0)"
+
+switch ($langChoice) {
+    "1" { $LANGUAGE = "EN" }
+    "2" { $LANGUAGE = "DE" }
+    "0" {
+        Write-Host "Cancelled. / Abgebrochen." -ForegroundColor Yellow
+        exit 0
+    }
+    default {
+        Write-Host "Invalid choice, using English. / Ungültige Wahl, verwende English." -ForegroundColor Yellow
+        $LANGUAGE = "EN"
+    }
+}
+
+Clear-Host
+
+# ============================================================================
+# CONFIGURATION
+# ============================================================================
 
 # Script Configuration
 $SCRIPT_NAME = "oci-instance-sniper.py"
@@ -167,20 +198,20 @@ $TRANSLATIONS = @{
         press_enter = "Press Enter to continue..."
     }
     DE = @{
-        title = "OCI Instance Sniper - Kontrollmenue v1.4"
+        title = "OCI Instance Sniper - Kontrollmenü v1.4"
         menu_1 = "Skript starten (Vordergrund - Live-Ausgabe sichtbar)"
-        menu_2 = "Skript starten (Hintergrund - laeuft versteckt bis PC aus)"
-        menu_3 = "Skript starten (Aufgabenplanung - ueberlebt Neustarts)"
-        menu_4 = "Status pruefen"
+        menu_2 = "Skript starten (Hintergrund - läuft versteckt bis PC aus)"
+        menu_3 = "Skript starten (Aufgabenplanung - überlebt Neustarts)"
+        menu_4 = "Status prüfen"
         menu_5 = "Live-Logs anzeigen"
         menu_6 = "Skript stoppen"
         menu_7 = "Konfiguration"
         menu_0 = "Beenden"
-        prompt = "Waehle Option (1-7, 0=Beenden)"
-        invalid = "Ungueltige Auswahl! Bitte 1-7 oder 0 eingeben."
+        prompt = "Wähle Option (1-7, 0=Beenden)"
+        invalid = "Ungültige Auswahl! Bitte 1-7 oder 0 eingeben."
 
         # Configuration menu
-        config_title = "Konfigurationsmenue"
+        config_title = "Konfigurationsmenü"
         config_current = "Aktuelle Konfiguration"
         config_1 = "Instanz-Name"
         config_2 = "CPUs (OCPUs)"
@@ -189,18 +220,18 @@ $TRANSLATIONS = @{
         config_5 = "Wiederholungsintervall (Sekunden)"
         config_6 = "Image-Typ"
         config_7 = "Sprache"
-        config_0 = "Zurueck zum Hauptmenue"
-        config_prompt = "Option zum Aendern waehlen (0=Zurueck)"
+        config_0 = "Zurück zum Hauptmenü"
+        config_prompt = "Option zum Ändern wählen (0=Zurück)"
         config_saved = "Konfiguration erfolgreich gespeichert!"
 
         # Config prompts
         prompt_instance_name = "Instanz-Name eingeben"
-        prompt_ocpus = "OCPUs eingeben (1-4 fuer Free Tier)"
-        prompt_memory = "Arbeitsspeicher in GB eingeben (1-24 fuer Free Tier)"
-        prompt_region = "Region auswaehlen"
+        prompt_ocpus = "OCPUs eingeben (1-4 für Free Tier)"
+        prompt_memory = "Arbeitsspeicher in GB eingeben (1-24 für Free Tier)"
+        prompt_region = "Region auswählen"
         prompt_interval = "Wiederholungsintervall in Sekunden (30/60/120 empfohlen)"
-        prompt_image = "Image auswaehlen"
-        prompt_language = "Sprache auswaehlen"
+        prompt_image = "Image auswählen"
+        prompt_language = "Sprache auswählen"
 
         # Regions
         region_frankfurt = "Frankfurt (eu-frankfurt-1)"
@@ -231,15 +262,15 @@ $TRANSLATIONS = @{
 
         # Status check
         status_title = "Skript-Status"
-        status_bg_running = "Hintergrund-Job: LAEUFT"
-        status_bg_stopped = "Hintergrund-Job: LAEUFT NICHT"
-        status_task_running = "Aufgabenplanung: LAEUFT"
-        status_task_stopped = "Aufgabenplanung: LAEUFT NICHT"
+        status_bg_running = "Hintergrund-Job: LÄUFT"
+        status_bg_stopped = "Hintergrund-Job: LÄUFT NICHT"
+        status_task_running = "Aufgabenplanung: LÄUFT"
+        status_task_stopped = "Aufgabenplanung: LÄUFT NICHT"
         status_task_notfound = "Aufgabenplanung: NICHT KONFIGURIERT"
 
         # Logs
         log_title = "Live-Logs (Strg+C zum Stoppen)"
-        log_not_found = "Log-Datei nicht gefunden. Skript moeglicherweise noch nicht gestartet."
+        log_not_found = "Log-Datei nicht gefunden. Skript möglicherweise noch nicht gestartet."
 
         # Stop
         stop_title = "Stoppe Skript"
@@ -251,16 +282,16 @@ $TRANSLATIONS = @{
         # Task Scheduler
         task_exists = "Task existiert bereits. Entferne alten Task..."
         task_created = "Aufgabenplanungs-Task erfolgreich erstellt!"
-        task_started = "Task gestartet! Pruefe Status mit Option 4."
-        task_create_error = "Fehler beim Erstellen des Tasks. PowerShell als Administrator ausfuehren!"
+        task_started = "Task gestartet! Prüfe Status mit Option 4."
+        task_create_error = "Fehler beim Erstellen des Tasks. PowerShell als Administrator ausführen!"
 
         # Background Job
-        job_exists = "Hintergrund-Job laeuft bereits!"
+        job_exists = "Hintergrund-Job läuft bereits!"
         job_started = "Hintergrund-Job erfolgreich gestartet!"
         job_stopped = "Hintergrund-Job gestoppt."
         job_notfound = "Kein Hintergrund-Job gefunden."
 
-        press_enter = "Enter druecken zum Fortfahren..."
+        press_enter = "Enter drücken zum Fortfahren..."
     }
 }
 
