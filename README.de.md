@@ -34,74 +34,240 @@ Keine manuelle Konfiguration nötig!
 
 ## 🎯 Features
 
-- **Smart Retry**: Versucht alle 60 Sekunden für 24 Stunden
-- **Multi-AZ**: Testet alle 3 Availability Domains
-- **Umfassendes Logging**: Alles wird in `oci-sniper.log` protokolliert
-- **Zero Config**: Setup-Skript macht alles automatisch
+- ✅ **Smart Retry**: Versucht alle 60 Sekunden für 24 Stunden
+- ✅ **Multi-AZ**: Testet alle 3 Availability Domains
+- ✅ **Instanz-Status-Überwachung**: Wartet automatisch auf RUNNING Status
+- ✅ **Auto Public IP Abruf**: Zeigt IP sofort an wenn bereit
+- ✅ **SSH Config Generator**: Erstellt fertige SSH-Konfiguration
+- ✅ **Reserved IP Support**: Optionale statische IP (empfohlen!)
+- ✅ **Zweisprachig**: Deutsch und Englisch Support
+- 🔔 **E-Mail-Benachrichtigungen**: Werde benachrichtigt wenn Instanz bereit ist *(Optional)*
+- 📊 **Umfassendes Logging**: Alles wird in `oci-sniper.log` protokolliert
+
+## 🆕 Neu in v1.2
+
+### **Instanz-Status-Überwachung**
+Kein manuelles Prüfen mehr! Das Skript:
+- Wartet automatisch bis Instanz RUNNING Status erreicht
+- Zeigt Fortschritt: PROVISIONING → STARTING → RUNNING
+- Zeigt Public IP sofort an
+- Generiert fertigen SSH-Befehl zum Kopieren
+
+**Vorher (v1.1):**
+```
+✅ Instanz erstellt!
+Nächste Schritte: Gehe zur OCI Console und hole IP...
+```
+
+**Jetzt (v1.2):**
+```
+✅ Instanz erstellt!
+⏳ Warte auf RUNNING Status...
+⏳ Instanz-Status: PROVISIONING (30s)
+⏳ Instanz-Status: STARTING (60s)
+✅ Instanz läuft jetzt!
+
+🌐 SSH VERBINDUNGS-INFO
+Public IP: 123.45.67.89
+SSH-Befehl: ssh ubuntu@123.45.67.89
+
+📝 SSH-Config generiert: ssh-config-oci.txt
+```
+
+### **Reserved Public IP (Optional)**
+Behalte dieselbe IP auch nach Instanz Stop/Start!
+
+**Vorteile:**
+- ✅ IP bleibt für immer gleich
+- ✅ Perfekt für SSH Config (`~/.ssh/config`)
+- ✅ Leicht zu merken
+- ✅ Kostenlos im Oracle Free Tier
+
+**Du wirst beim Ausführen des Skripts gefragt:**
+```
+Möchtest du eine RESERVIERTE Public IP erstellen? (j/n):
+```
+
+### **SSH Config Generator**
+Erstellt automatisch `ssh-config-oci.txt`:
+```ssh
+Host oci
+    HostName 123.45.67.89
+    User ubuntu
+    IdentityFile ~/.ssh/id_rsa
+    StrictHostKeyChecking accept-new
+```
+
+Einfach nach `~/.ssh/config` kopieren und nutzen: `ssh oci`
+
+### **E-Mail-Benachrichtigungen (Optional)**
+
+Werde benachrichtigt wenn deine Instanz bereit ist!
+
+**Perfekt für:**
+- 🛌 Skript über Nacht laufen lassen
+- 📱 Handy-Benachrichtigung erhalten (Gmail App)
+- 💼 Ausführung auf Remote-Maschine
+
+**Setup (2 Minuten):**
+
+1. **Gmail App-Passwort erstellen:**
+   ```
+   Google-Konto → Sicherheit → Bestätigung in zwei Schritten (aktivieren)
+   → App-Passwörter → Generieren
+   → 16-stelliges Passwort kopieren
+   ```
+
+2. **`oci-instance-sniper.py` bearbeiten:**
+   ```python
+   EMAIL_NOTIFICATIONS_ENABLED = True
+   EMAIL_FROM = "deine@gmail.com"
+   EMAIL_TO = "deine@gmail.com"
+   EMAIL_PASSWORD = "dein-16-stelliges-app-passwort"
+   ```
+
+3. **Fertig!** E-Mail wird automatisch gesendet wenn Instanz bereit ist.
+
+**E-Mail enthält:**
+- ✅ Instanz-Details (Name, Shape, Region, AD)
+- ✅ Public IP Adresse
+- ✅ Fertigen SSH-Befehl zum Kopieren
+- ✅ Nächste Schritte Guide
+
+**Keine E-Mails gewünscht?** Lass einfach `EMAIL_NOTIFICATIONS_ENABLED = False` (Standard)
+
+**Alternative E-Mail-Anbieter:**
+- **Outlook:** `smtp.office365.com:587`
+- **GMX:** `mail.gmx.net:587`
+- **Web.de:** `smtp.web.de:587`
+
+### **Zweisprachiger Support**
+Wechsle zwischen Deutsch und Englisch:
+```python
+LANGUAGE = "DE"  # oder "EN" für Englisch
+```
+
+Alle Meldungen, Logs und Prompts in deiner Sprache!
 
 ## 📊 Konfiguration (Optional)
 
 Bearbeite `oci-instance-sniper.py` wenn du folgendes ändern möchtest:
 
 ```python
+# Instanz-Konfiguration
 OCPUS = 2              # Anzahl OCPUs (max 4 für Free Tier)
 MEMORY_IN_GBS = 12     # RAM in GB (max 24 für Free Tier)
-RETRY_DELAY_SECONDS = 60
-MAX_ATTEMPTS = 1440    # 24 Stunden
+
+# Retry-Konfiguration
+RETRY_DELAY_SECONDS = 60    # Wartezeit zwischen Versuchen
+MAX_ATTEMPTS = 1440         # 24 Stunden
+
+# Sprache
+LANGUAGE = "DE"  # "DE" oder "EN"
+
+# E-Mail-Benachrichtigungen (Optional)
+EMAIL_NOTIFICATIONS_ENABLED = False  # Auf True setzen zum Aktivieren
+EMAIL_FROM = "deine@gmail.com"
+EMAIL_TO = "deine@gmail.com"
+EMAIL_PASSWORD = "dein-app-passwort"
 ```
 
 ## 💡 Tipps für Erfolg
 
-- **Sei geduldig**: ARM-Instanzen sind sehr gefragt. Kann Stunden/Tage dauern.
-- **Beste Zeiten**: Über Nacht und an Wochenenden laufen lassen
-- **Mehrere Versuche**: Auf mehreren Rechnern laufen lassen für bessere Chancen
-- **Logs überwachen**: `Get-Content -Path oci-sniper.log -Wait -Tail 20`
+### **Timing ist wichtig**
+- 🌙 **Beste Zeiten**: 2-6 Uhr UTC (Oracle Wartungsfenster)
+- 📅 **Wochenenden**: Höhere Erfolgsrate Samstag/Sonntag
+- 🌍 **Beste Regionen**: eu-frankfurt-1, us-ashburn-1
+
+### **Sei geduldig**
+- ⏱️ ARM-Instanzen sind sehr gefragt
+- 📊 **Durchschnittliche Wartezeit**: 2-8 Stunden (kann variieren)
+- 🎲 **Maximum berichtet**: Bis zu 3-5 Tage
+
+### **Mehrere Versuche**
+- 💻 Auf mehreren Rechnern laufen lassen für bessere Chancen
+- 📱 Skript über Nacht mit E-Mail-Benachrichtigungen laufen lassen
+
+### **Logs überwachen**
+```powershell
+# Live-Ausgabe der Logs
+Get-Content -Path oci-sniper.log -Wait -Tail 20
+```
 
 ## 🎉 Bei Erfolg
 
 ```
 🎉 INSTANZ ERFOLGREICH ERSTELLT!
-Instance Name: nextcloud-backup-instance
-Instance OCID: ocid1.instance...
-Availability Domain: AD-2
-Shape: VM.Standard.A1.Flex
-State: PROVISIONING
+Instanz-Details:
+  - Name: nextcloud-backup-instance
+  - OCID: ocid1.instance...
+  - Availability Domain: AD-2
+  - Shape: VM.Standard.A1.Flex
+  - Status: RUNNING
+
+🌐 SSH VERBINDUNGS-INFO
+Public IP: 123.45.67.89
+Private IP: 10.0.0.42
+
+SSH-Befehl:
+  ssh ubuntu@123.45.67.89
+
+Erste Verbindung (akzeptiert automatisch Fingerprint):
+  ssh -o StrictHostKeyChecking=accept-new ubuntu@123.45.67.89
+
+📝 SSH-Config generiert: ssh-config-oci.txt
+📧 E-Mail-Benachrichtigung gesendet an: deine@gmail.com
 
 Nächste Schritte:
-1. Warte bis Instanz 'RUNNING' Status erreicht
-2. Hole Public IP aus OCI Console
-3. SSH in Instanz: ssh ubuntu@<PUBLIC_IP>
+1. Per SSH in Instanz einloggen mit obigem Befehl
+2. System aktualisieren: sudo apt update && sudo apt upgrade -y
+3. Docker installieren: curl -fsSL https://get.docker.com | sh
+4. Nextcloud deployen!
 ```
 
 ## 🔧 Fehlerbehebung
 
-**Konfigurationsfehler beim Start?**
+### **Konfigurationsfehler beim Start?**
 ```powershell
 # Setup-Skript ausführen um OCIDs automatisch zu konfigurieren
 .\setup.ps1
 ```
 
-**OCI CLI nach Setup nicht gefunden?**
+### **OCI CLI nach Setup nicht gefunden?**
 ```powershell
 # PowerShell neu starten und erneut versuchen
 ```
 
-**Kein VCN gefunden?**
+### **Kein VCN während Setup gefunden?**
 ```
 VCN in OCI Console erstellen:
 Networking → Virtual Cloud Networks → Create VCN
+Nutze "VCN Wizard" für schnellstes Setup
 ```
 
-**Skript findet immer keine Kapazität?**
+### **Skript findet immer keine Kapazität?**
 ```
 Das ist normal! ARM-Instanzen sind sehr beliebt.
-Lass es weiterlaufen - es wird irgendwann klappen.
+- Lass es weiterlaufen - es wird irgendwann klappen
+- Aktiviere E-Mail-Benachrichtigungen für Übernacht-Läufe
+- Probiere verschiedene Zeiten (siehe "Tipps für Erfolg" oben)
 ```
 
-**Unicode/Emoji-Fehler im Log?**
+### **E-Mail funktioniert nicht?**
 ```
-In v1.1 behoben! Skript nutzt jetzt UTF-8 Encoding für Windows Console.
-Stelle sicher, dass du die neueste Version nutzt.
+Häufige Probleme:
+- Gmail: Stelle sicher, dass du App-Passwort nutzt, nicht normales Passwort
+- 2FA: Muss im Google-Konto aktiviert sein für App-Passwörter
+- Firewall: Prüfe ob Port 587 blockiert ist
+- Teste E-Mail manuell um SMTP-Einstellungen zu verifizieren
+```
+
+### **Reserved IP nicht angehängt?**
+```
+Die Instanz nutzt ephemere IP während der Erstellung.
+Reserved IP wird beim nächsten Neustart/Neuerstellung genutzt.
+Oder manuell anhängen via OCI Console:
+Networking → Public IPs → Attach to Instance
 ```
 
 ## 📄 Lizenz
@@ -111,9 +277,16 @@ MIT License - Frei nutzbar!
 ## 👤 Autor
 
 **Dave Vaupel**
-- GitHub: [@davidvaupel](https://github.com/davidvaupel)
+- GitHub: [@MCCMDave](https://github.com/MCCMDave)
 - Aufbau von Expertise in Cloud Infrastructure & Customer Success Engineering
+
+## 🙏 Danksagungen
+
+- Oracle Cloud Infrastructure für Free Tier ARM-Instanzen
+- Community-Feedback für Feature-Anfragen
 
 ---
 
 **Entwickelt um den "Out of host capacity" Fehler zu besiegen! ☁️**
+
+*Gib dem Repo einen Stern ⭐ wenn es dir geholfen hat eine ARM-Instanz zu bekommen!*
