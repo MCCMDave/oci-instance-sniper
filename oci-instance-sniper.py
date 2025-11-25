@@ -45,20 +45,13 @@ import json
 import os
 import re
 
-# Try to import tenacity for retry logic (optional dependency)
-try:
-    from tenacity import (
-        retry,
-        stop_after_attempt,
-        wait_exponential,
-        retry_if_exception_type,
-        before_sleep_log,
-    )
-    TENACITY_AVAILABLE = True
-except ImportError:
-    TENACITY_AVAILABLE = False
-    print("Warning: tenacity library not found. Retry logic will be disabled.")
-    print("Install with: pip install tenacity==8.2.3")
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
+    before_sleep_log,
+)
 
 # ============================================================================
 # LANGUAGE SELECTION
@@ -70,35 +63,35 @@ def load_config_file():
     config_file = os.path.join(os.path.dirname(__file__), "sniper-config.json")
     if os.path.exists(config_file):
         try:
-            with open(config_file, 'r', encoding='utf-8') as f:
+            with open(config_file, "r", encoding="utf-8") as f:
                 config = json.load(f)
                 # Validate config values
                 if not isinstance(config, dict):
                     print("Warning: Config file is not a valid JSON object. Using defaults.")
                     return {}
                 # Validate OCPUs (1-4 for Free Tier)
-                if 'ocpus' in config:
-                    if not isinstance(config['ocpus'], int) or config['ocpus'] < 1 or config['ocpus'] > 4:
+                if "ocpus" in config:
+                    if not isinstance(config["ocpus"], int) or config["ocpus"] < 1 or config["ocpus"] > 4:
                         print(f"Warning: Invalid OCPUs value: {config['ocpus']}. Must be 1-4. Using default: 2")
-                        config['ocpus'] = 2
+                        config["ocpus"] = 2
                 # Validate Memory (1-24 GB for Free Tier)
-                if 'memory_in_gbs' in config:
-                    mem = config['memory_in_gbs']
+                if "memory_in_gbs" in config:
+                    mem = config["memory_in_gbs"]
                     if not isinstance(mem, int) or mem < 1 or mem > 24:
                         print(f"Warning: Invalid Memory: {mem}. Must be 1-24 GB. Using default: 12")
-                        config['memory_in_gbs'] = 12
+                        config["memory_in_gbs"] = 12
                 # Validate retry delay (minimum 10 seconds)
-                if 'retry_delay_seconds' in config:
-                    delay = config['retry_delay_seconds']
+                if "retry_delay_seconds" in config:
+                    delay = config["retry_delay_seconds"]
                     if not isinstance(delay, int) or delay < 10:
                         print(f"Warning: Invalid retry delay: {delay}. Must be >= 10s. Using default: 60")
-                        config['retry_delay_seconds'] = 60
+                        config["retry_delay_seconds"] = 60
                 # Validate max attempts (minimum 1)
-                if 'max_attempts' in config:
-                    attempts = config['max_attempts']
+                if "max_attempts" in config:
+                    attempts = config["max_attempts"]
                     if not isinstance(attempts, int) or attempts < 1:
                         print(f"Warning: Invalid max attempts: {attempts}. Must be >= 1. Using default: 1440")
-                        config['max_attempts'] = 1440
+                        config["max_attempts"] = 1440
                 return config
         except json.JSONDecodeError as e:
             print(f"Error: Config file is corrupted (invalid JSON): {e}")
@@ -270,7 +263,7 @@ TRANSLATIONS = {
         "reserved_ip_created": "Reservierte IP erstellt",
         "bad_request": "Ungültige Anfrage - Prüfen Sie Ihre Konfiguration (Shape, Image, Subnet)",
         "auth_failed": "Authentifizierung fehlgeschlagen - Führen Sie aus: oci setup config",
-    }
+    },
 }
 
 
@@ -286,16 +279,14 @@ def t(key):
 # Configure UTF-8 encoding for Windows console
 if sys.platform == "win32":
     import io
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('oci-sniper.log', encoding='utf-8'),
-        logging.StreamHandler(sys.stdout)
-    ]
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[logging.FileHandler("oci-sniper.log", encoding="utf-8"), logging.StreamHandler(sys.stdout)],
 )
 logger = logging.getLogger(__name__)
 
@@ -309,9 +300,9 @@ def ask_yes_no(question):
     """Ask user a yes/no question"""
     while True:
         response = input(f"{question} (y/n): ").lower().strip()
-        if response in ['y', 'yes', 'ja', 'j']:
+        if response in ["y", "yes", "ja", "j"]:
             return True
-        elif response in ['n', 'no', 'nein']:
+        elif response in ["n", "no", "nein"]:
             return False
         else:
             print("Please answer with 'y' or 'n'")
@@ -324,10 +315,10 @@ def send_email_notification(instance_data, public_ip, private_ip):
         return
 
     try:
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = '✅ OCI Instance Successfully Created!'
-        msg['From'] = EMAIL_FROM
-        msg['To'] = EMAIL_TO
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = "✅ OCI Instance Successfully Created!"
+        msg["From"] = EMAIL_FROM
+        msg["To"] = EMAIL_TO
 
         # Email body
         text = f"""
@@ -356,7 +347,7 @@ Next Steps:
 Sent by OCI Instance Sniper v1.2
         """
 
-        msg.attach(MIMEText(text, 'plain'))
+        msg.attach(MIMEText(text, "plain"))
 
         # Send email
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
@@ -388,7 +379,7 @@ Host oci
 """
 
     try:
-        with open('ssh-config-oci.txt', 'w', encoding='utf-8') as f:
+        with open("ssh-config-oci.txt", "w", encoding="utf-8") as f:
             f.write(config_content)
         logger.info(f"📝 {t('ssh_config_generated')}: ssh-config-oci.txt")
     except Exception as e:
@@ -414,8 +405,7 @@ def wait_for_instance_running(compute_client, instance_id, network_client, timeo
                 # Get VNIC info for IP addresses
                 try:
                     vnic_attachments = compute_client.list_vnic_attachments(
-                        compartment_id=instance.compartment_id,
-                        instance_id=instance.id
+                        compartment_id=instance.compartment_id, instance_id=instance.id
                     ).data
 
                     if vnic_attachments:
@@ -445,9 +435,7 @@ def create_reserved_ip(network_client, compartment_id, display_name="nextcloud-r
 
     try:
         reserved_ip_details = oci.core.models.CreatePublicIpDetails(
-            compartment_id=compartment_id,
-            lifetime="RESERVED",
-            display_name=display_name
+            compartment_id=compartment_id, lifetime="RESERVED", display_name=display_name
         )
 
         reserved_ip = network_client.create_public_ip(reserved_ip_details).data
@@ -463,13 +451,14 @@ def create_reserved_ip(network_client, compartment_id, display_name="nextcloud-r
 # MAIN FUNCTIONS
 # ============================================================================
 
+
 def create_instance_config(availability_domain, reserved_ip_id=None):
     """Create instance configuration for the given availability domain."""
 
     create_vnic_details = oci.core.models.CreateVnicDetails(
         subnet_id=SUBNET_ID,
         assign_public_ip=ASSIGN_PUBLIC_IP if not reserved_ip_id else False,
-        public_ip_id=reserved_ip_id if reserved_ip_id else None
+        public_ip_id=reserved_ip_id if reserved_ip_id else None,
     )
 
     instance_details = oci.core.models.LaunchInstanceDetails(
@@ -477,47 +466,33 @@ def create_instance_config(availability_domain, reserved_ip_id=None):
         compartment_id=COMPARTMENT_ID,
         display_name=INSTANCE_NAME,
         shape=SHAPE,
-        shape_config=oci.core.models.LaunchInstanceShapeConfigDetails(
-            ocpus=OCPUS,
-            memory_in_gbs=MEMORY_IN_GBS
-        ),
+        shape_config=oci.core.models.LaunchInstanceShapeConfigDetails(ocpus=OCPUS, memory_in_gbs=MEMORY_IN_GBS),
         create_vnic_details=create_vnic_details,
-        metadata={
-            'ssh_authorized_keys': SSH_PUBLIC_KEY
-        },
-        source_details=oci.core.models.InstanceSourceViaImageDetails(
-            image_id=IMAGE_ID,
-            source_type="image"
-        )
+        metadata={"ssh_authorized_keys": SSH_PUBLIC_KEY},
+        source_details=oci.core.models.InstanceSourceViaImageDetails(image_id=IMAGE_ID, source_type="image"),
     )
 
     return instance_details
 
 
-if TENACITY_AVAILABLE:
-    @retry(
-        retry=retry_if_exception_type(
-            (
-                oci.exceptions.RequestException,
-                oci.exceptions.ConnectTimeout,
-                ConnectionError,
-                TimeoutError,
-            )
-        ),
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=2, max=10),
-        before_sleep=before_sleep_log(logger, logging.WARNING),
-        reraise=True,
-    )
-    def _launch_instance_with_retry(compute_client, instance_details, availability_domain):
-        """Internal function to launch instance with retry logic for network errors."""
-        logger.info(f"{t('attempting_create')} {availability_domain}...")
-        return compute_client.launch_instance(instance_details)
-else:
-    def _launch_instance_with_retry(compute_client, instance_details, availability_domain):
-        """Internal function to launch instance (no retry - tenacity not installed)."""
-        logger.info(f"{t('attempting_create')} {availability_domain}...")
-        return compute_client.launch_instance(instance_details)
+@retry(
+    retry=retry_if_exception_type(
+        (
+            oci.exceptions.RequestException,
+            oci.exceptions.ConnectTimeout,
+            ConnectionError,
+            TimeoutError,
+        )
+    ),
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    before_sleep=before_sleep_log(logger, logging.WARNING),
+    reraise=True,
+)
+def _launch_instance_with_retry(compute_client, instance_details, availability_domain):
+    """Internal function to launch instance with retry logic for network errors."""
+    logger.info(f"{t('attempting_create')} {availability_domain}...")
+    return compute_client.launch_instance(instance_details)
 
 
 def try_create_instance(compute_client, availability_domain, reserved_ip_id=None):
@@ -570,11 +545,11 @@ def validate_ssh_key(ssh_key):
 
     # Check for common SSH key patterns
     valid_patterns = [
-        r'^ssh-rsa AAAA[0-9A-Za-z+/]+[=]{0,3}(\s.*)?$',  # RSA
-        r'^ssh-ed25519 AAAA[0-9A-Za-z+/]+[=]{0,3}(\s.*)?$',  # Ed25519
-        r'^ecdsa-sha2-nistp256 AAAA[0-9A-Za-z+/]+[=]{0,3}(\s.*)?$',  # ECDSA 256
-        r'^ecdsa-sha2-nistp384 AAAA[0-9A-Za-z+/]+[=]{0,3}(\s.*)?$',  # ECDSA 384
-        r'^ecdsa-sha2-nistp521 AAAA[0-9A-Za-z+/]+[=]{0,3}(\s.*)?$',  # ECDSA 521
+        r"^ssh-rsa AAAA[0-9A-Za-z+/]+[=]{0,3}(\s.*)?$",  # RSA
+        r"^ssh-ed25519 AAAA[0-9A-Za-z+/]+[=]{0,3}(\s.*)?$",  # Ed25519
+        r"^ecdsa-sha2-nistp256 AAAA[0-9A-Za-z+/]+[=]{0,3}(\s.*)?$",  # ECDSA 256
+        r"^ecdsa-sha2-nistp384 AAAA[0-9A-Za-z+/]+[=]{0,3}(\s.*)?$",  # ECDSA 384
+        r"^ecdsa-sha2-nistp521 AAAA[0-9A-Za-z+/]+[=]{0,3}(\s.*)?$",  # ECDSA 521
     ]
 
     for pattern in valid_patterns:
@@ -674,7 +649,7 @@ def main():
     logger.info(f"ℹ️  {t('reserved_ip_yes')}")
     logger.info("=" * 80)
 
-    RESERVED_PUBLIC_IP = ask_yes_no(t('reserved_ip_prompt'))
+    RESERVED_PUBLIC_IP = ask_yes_no(t("reserved_ip_prompt"))
 
     reserved_ip_obj = None
     reserved_ip_id = None
@@ -700,17 +675,15 @@ def main():
 
             if success:
                 # Wait for instance to be RUNNING
-                instance, public_ip, private_ip = wait_for_instance_running(
-                    compute_client, instance.id, network_client
-                )
+                instance, public_ip, private_ip = wait_for_instance_running(compute_client, instance.id, network_client)
 
                 # If reserved IP was created but no public IP from VNIC, use reserved IP
                 if not public_ip and reserved_ip_obj:
                     public_ip = reserved_ip_obj.ip_address
 
-                logger.info("\n" + "="*80)
+                logger.info("\n" + "=" * 80)
                 logger.info(f"🎉 {t('instance_created_title')}")
-                logger.info("="*80)
+                logger.info("=" * 80)
                 logger.info(f"{t('instance_details')}:")
                 logger.info(f"  - Name: {instance.display_name}")
                 logger.info(f"  - OCID: {instance.id}")
@@ -720,9 +693,9 @@ def main():
 
                 if public_ip:
                     logger.info("")
-                    logger.info("="*80)
+                    logger.info("=" * 80)
                     logger.info(f"🌐 {t('ssh_connection_info')}")
-                    logger.info("="*80)
+                    logger.info("=" * 80)
                     logger.info(f"{t('public_ip')}: {public_ip}")
                     if private_ip:
                         logger.info(f"{t('private_ip')}: {private_ip}")
@@ -732,7 +705,7 @@ def main():
                     logger.info("")
                     logger.info("First-time connection (auto-accepts fingerprint):")
                     logger.info(f"  ssh -o StrictHostKeyChecking=accept-new ubuntu@{public_ip}")
-                    logger.info("="*80)
+                    logger.info("=" * 80)
 
                     # Generate SSH config
                     generate_ssh_config(public_ip, instance.display_name)
@@ -746,7 +719,7 @@ def main():
                 logger.info(f"{t('step_2')}")
                 logger.info(f"{t('step_3')}")
                 logger.info(f"{t('step_4')}")
-                logger.info("="*80)
+                logger.info("=" * 80)
                 return 0
 
             # Small delay between AD attempts
@@ -754,11 +727,11 @@ def main():
 
         # Wait before next attempt
         if attempt < MAX_ATTEMPTS:
-            logger.info(t('waiting_before_retry').format(seconds=RETRY_DELAY_SECONDS))
+            logger.info(t("waiting_before_retry").format(seconds=RETRY_DELAY_SECONDS))
             time.sleep(RETRY_DELAY_SECONDS)
 
     logger.warning(f"\n❌ {t('max_attempts_reached').format(attempts=MAX_ATTEMPTS)}")
-    logger.info(t('script_can_restart'))
+    logger.info(t("script_can_restart"))
     return 1
 
 
@@ -767,7 +740,7 @@ if __name__ == "__main__":
         sys.exit(main())
     except KeyboardInterrupt:
         logger.info(f"\n\n⚠️  {t('script_interrupted')}")
-        logger.info(t('script_can_restart'))
+        logger.info(t("script_can_restart"))
         sys.exit(0)
     except Exception as e:
         logger.error(f"\n❌ {t('fatal_error')}: {str(e)}")
