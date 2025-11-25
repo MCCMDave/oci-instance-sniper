@@ -17,34 +17,255 @@
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
+# ============================================================================
+# LANGUAGE CONFIGURATION
+# ============================================================================
+$LANGUAGE = "EN"  # Change to "DE" for German
+
+# Language strings
+$strings = @{
+    EN = @{
+        title = "OCI INSTANCE SNIPER - COMPLETE SETUP"
+        steps_title = "This script will:"
+        step1 = "Check/Install Python"
+        step2 = "Install OCI CLI"
+        step3 = "Configure OCI API credentials"
+        step4 = "Fetch your OCIDs automatically"
+        step5 = "Configure the Python script"
+        continue_prompt = "Press ENTER to continue or Ctrl+C to cancel..."
+        quick_mode = "Quick setup mode - updating OCIDs..."
+        checking_python = "Checking Python installation..."
+        python_found = "Python found:"
+        python_warning = "Python not found"
+        installing_python = "Installing Python..."
+        python_installed = "Python installed!"
+        python_error = "Could not install Python automatically"
+        python_manual = "Please install Python manually from: https://www.python.org/downloads/"
+        python_path_note = "Make sure to check 'Add Python to PATH' during installation!"
+        upgrading_pip = "Upgrading pip..."
+        installing_oci = "Installing OCI CLI..."
+        oci_installed = "OCI CLI already installed:"
+        oci_installing = "Installing OCI CLI (this may take 1-2 minutes)..."
+        oci_success = "OCI CLI installed:"
+        oci_error = "OCI CLI installation failed"
+        restart_prompt = "Please restart PowerShell and try again"
+        config_credentials = "Configuring OCI credentials..."
+        config_exists = "Using existing OCI configuration"
+        config_wizard = "Starting OCI setup wizard..."
+        config_need = "You will need:"
+        config_user = "User OCID (cloud.oracle.com -> User Icon -> My Profile)"
+        config_tenancy = "Tenancy OCID (User Icon -> Tenancy: [Name])"
+        config_region = "Region (e.g., eu-frankfurt-1)"
+        config_error = "OCI config was not created"
+        config_manual = "Please run 'oci setup config' manually"
+        key_upload_title = "IMPORTANT: Upload your PUBLIC KEY to OCI Console!"
+        key_upload_1 = "Go to: https://cloud.oracle.com"
+        key_upload_2 = "User Icon -> My Profile -> API Keys -> Add API Key"
+        key_upload_3 = "Select 'Paste Public Key'"
+        key_upload_4 = "Paste the key below:"
+        key_begin = "--- BEGIN PUBLIC KEY ---"
+        key_end = "--- END PUBLIC KEY ---"
+        key_copied = "Public key copied to clipboard!"
+        key_prompt = "Press ENTER after you've uploaded the key to OCI Console..."
+        credentials_ok = "OCI credentials configured"
+        fetching_ocids = "Fetching OCIDs from your OCI account..."
+        tenancy_ok = "Tenancy OCID:"
+        fetching_vcn = "Fetching VCN..."
+        vcn_found = "VCN found"
+        vcn_error = "No VCN found in your OCI account"
+        vcn_create = "Please create a VCN first:"
+        vcn_step1 = "Go to OCI Console -> Networking -> Virtual Cloud Networks"
+        vcn_step2 = "Click 'Create VCN'"
+        vcn_step3 = "Use 'VCN Wizard' for quick setup"
+        vcn_rerun = "Then run this script again."
+        fetching_subnet = "Fetching Subnet..."
+        subnet_ok = "Subnet OCID:"
+        subnet_error = "No Subnet found"
+        subnet_create = "Please create a Subnet in your VCN first"
+        fetching_image = "Fetching Ubuntu 24.04 Image..."
+        image_ok = "Image OCID:"
+        image_warning = "Could not fetch Ubuntu 24.04 image automatically"
+        image_manual = "Please enter the Image OCID manually:"
+        image_step1 = "Go to OCI Console -> Compute -> Instances -> Create Instance"
+        image_step2 = "Change Image -> Canonical Ubuntu -> 24.04"
+        image_step3 = "Copy the Image OCID"
+        image_prompt = "Paste Image OCID here"
+        image_error = "No Image OCID provided"
+        updating_script = "Updating Python script..."
+        script_error = "Python script not found:"
+        script_location = "Please make sure oci-instance-sniper.py is in the same folder as this script"
+        backup_created = "Backup created:"
+        script_updated = "Python script updated"
+        script_update_error = "Failed to update Python script"
+        setup_complete = "SETUP COMPLETE!"
+        config_summary = "Configuration Summary:"
+        compartment = "Compartment:"
+        subnet = "Subnet:"
+        image = "Image:"
+        ssh_key = "SSH Key:"
+        configured = "Configured [OK]"
+        next_steps = "NEXT STEPS:"
+        run_sniper = "Run the sniper script:"
+        run_background = "Or run in background:"
+        monitor_log = "Monitor the log:"
+        important = "IMPORTANT: Finding an ARM instance can take hours or days!"
+        best_times = "Best success rates: overnight and on weekends"
+        good_luck = "Good luck! 🎯"
+        press_close = "Press ENTER to close..."
+    }
+    DE = @{
+        title = "OCI INSTANCE SNIPER - KOMPLETTES SETUP"
+        steps_title = "Dieses Script wird:"
+        step1 = "Python pruefen/installieren"
+        step2 = "OCI CLI installieren"
+        step3 = "OCI API-Zugangsdaten konfigurieren"
+        step4 = "Deine OCIDs automatisch abrufen"
+        step5 = "Das Python-Script konfigurieren"
+        continue_prompt = "Druecke ENTER zum Fortfahren oder Strg+C zum Abbrechen..."
+        quick_mode = "Schnell-Setup-Modus - Aktualisiere OCIDs..."
+        checking_python = "Pruefe Python-Installation..."
+        python_found = "Python gefunden:"
+        python_warning = "Python nicht gefunden"
+        installing_python = "Installiere Python..."
+        python_installed = "Python installiert!"
+        python_error = "Konnte Python nicht automatisch installieren"
+        python_manual = "Bitte installiere Python manuell von: https://www.python.org/downloads/"
+        python_path_note = "Stelle sicher, dass 'Add Python to PATH' waehrend der Installation aktiviert ist!"
+        upgrading_pip = "Aktualisiere pip..."
+        installing_oci = "Installiere OCI CLI..."
+        oci_installed = "OCI CLI bereits installiert:"
+        oci_installing = "Installiere OCI CLI (dauert ca. 1-2 Minuten)..."
+        oci_success = "OCI CLI installiert:"
+        oci_error = "OCI CLI Installation fehlgeschlagen"
+        restart_prompt = "Bitte starte PowerShell neu und versuche es erneut"
+        config_credentials = "Konfiguriere OCI-Zugangsdaten..."
+        config_exists = "Verwende existierende OCI-Konfiguration"
+        config_wizard = "Starte OCI Setup-Wizard..."
+        config_need = "Du benoetigst:"
+        config_user = "User OCID (cloud.oracle.com -> Benutzer-Symbol -> Mein Profil)"
+        config_tenancy = "Tenancy OCID (Benutzer-Symbol -> Tenancy: [Name])"
+        config_region = "Region (z.B. eu-frankfurt-1)"
+        config_error = "OCI-Konfiguration wurde nicht erstellt"
+        config_manual = "Bitte fuehre 'oci setup config' manuell aus"
+        key_upload_title = "WICHTIG: Lade deinen OEFFENTLICHEN SCHLUESSEL in die OCI Console hoch!"
+        key_upload_1 = "Gehe zu: https://cloud.oracle.com"
+        key_upload_2 = "Benutzer-Symbol -> Mein Profil -> API Keys -> API Key hinzufuegen"
+        key_upload_3 = "Waehle 'Oeffentlichen Schluessel einfuegen'"
+        key_upload_4 = "Fuege den folgenden Schluessel ein:"
+        key_begin = "--- ANFANG OEFFENTLICHER SCHLUESSEL ---"
+        key_end = "--- ENDE OEFFENTLICHER SCHLUESSEL ---"
+        key_copied = "Oeffentlicher Schluessel in Zwischenablage kopiert!"
+        key_prompt = "Druecke ENTER nachdem du den Schluessel in die OCI Console hochgeladen hast..."
+        credentials_ok = "OCI-Zugangsdaten konfiguriert"
+        fetching_ocids = "Rufe OCIDs von deinem OCI-Account ab..."
+        tenancy_ok = "Tenancy OCID:"
+        fetching_vcn = "Rufe VCN ab..."
+        vcn_found = "VCN gefunden"
+        vcn_error = "Kein VCN in deinem OCI-Account gefunden"
+        vcn_create = "Bitte erstelle zuerst ein VCN:"
+        vcn_step1 = "Gehe zur OCI Console -> Networking -> Virtual Cloud Networks"
+        vcn_step2 = "Klicke 'VCN erstellen'"
+        vcn_step3 = "Nutze den 'VCN Wizard' fuer schnelles Setup"
+        vcn_rerun = "Fuehre dann dieses Script erneut aus."
+        fetching_subnet = "Rufe Subnet ab..."
+        subnet_ok = "Subnet OCID:"
+        subnet_error = "Kein Subnet gefunden"
+        subnet_create = "Bitte erstelle zuerst ein Subnet in deinem VCN"
+        fetching_image = "Rufe Ubuntu 24.04 Image ab..."
+        image_ok = "Image OCID:"
+        image_warning = "Konnte Ubuntu 24.04 Image nicht automatisch abrufen"
+        image_manual = "Bitte gib die Image OCID manuell ein:"
+        image_step1 = "Gehe zur OCI Console -> Compute -> Instances -> Instance erstellen"
+        image_step2 = "Aendere Image -> Canonical Ubuntu -> 24.04"
+        image_step3 = "Kopiere die Image OCID"
+        image_prompt = "Fuege Image OCID hier ein"
+        image_error = "Keine Image OCID angegeben"
+        updating_script = "Aktualisiere Python-Script..."
+        script_error = "Python-Script nicht gefunden:"
+        script_location = "Stelle sicher, dass oci-instance-sniper.py im gleichen Ordner wie dieses Script liegt"
+        backup_created = "Backup erstellt:"
+        script_updated = "Python-Script aktualisiert"
+        script_update_error = "Fehler beim Aktualisieren des Python-Scripts"
+        setup_complete = "SETUP ABGESCHLOSSEN!"
+        config_summary = "Konfigurations-Uebersicht:"
+        compartment = "Compartment:"
+        subnet = "Subnet:"
+        image = "Image:"
+        ssh_key = "SSH Key:"
+        configured = "Konfiguriert [OK]"
+        next_steps = "NAECHSTE SCHRITTE:"
+        run_sniper = "Starte das Sniper-Script:"
+        run_background = "Oder im Hintergrund starten:"
+        monitor_log = "Log ueberwachen:"
+        important = "WICHTIG: Eine ARM-Instanz zu finden kann Stunden oder Tage dauern!"
+        best_times = "Beste Erfolgsraten: nachts und am Wochenende"
+        good_luck = "Viel Erfolg!"
+        press_close = "Druecke ENTER zum Schliessen..."
+    }
+}
+
+$s = $strings[$LANGUAGE]
+
 Write-Host ""
 Write-Host "============================================================================" -ForegroundColor Cyan
-Write-Host "      OCI INSTANCE SNIPER - COMPLETE SETUP" -ForegroundColor Cyan
+Write-Host "      $($s.title)" -ForegroundColor Cyan
 Write-Host "============================================================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "This script will:" -ForegroundColor Yellow
-Write-Host "  1. Check/Install Python" -ForegroundColor White
-Write-Host "  2. Install OCI CLI" -ForegroundColor White
-Write-Host "  3. Configure OCI API credentials" -ForegroundColor White
-Write-Host "  4. Fetch your OCIDs automatically" -ForegroundColor White
-Write-Host "  5. Configure the Python script" -ForegroundColor White
-Write-Host ""
-Write-Host "Press ENTER to continue or Ctrl+C to cancel..." -ForegroundColor Yellow
-Read-Host
+
+# Detect if this is first-time setup
+$isFirstRun = $false
+$configPath = "$env:USERPROFILE\.oci\config"
+
+try {
+    $pythonVersion = python --version 2>&1
+    $hasPython = $true
+} catch {
+    $hasPython = $false
+    $isFirstRun = $true
+}
+
+try {
+    $ociVersion = oci --version 2>&1
+    $hasOCI = $true
+} catch {
+    $hasOCI = $false
+    $isFirstRun = $true
+}
+
+$hasConfig = Test-Path $configPath
+
+if (-not $hasConfig) {
+    $isFirstRun = $true
+}
+
+if ($isFirstRun) {
+    Write-Host "$($s.steps_title)" -ForegroundColor Yellow
+    Write-Host "  1. $($s.step1)" -ForegroundColor White
+    Write-Host "  2. $($s.step2)" -ForegroundColor White
+    Write-Host "  3. $($s.step3)" -ForegroundColor White
+    Write-Host "  4. $($s.step4)" -ForegroundColor White
+    Write-Host "  5. $($s.step5)" -ForegroundColor White
+    Write-Host ""
+    Write-Host "$($s.continue_prompt)" -ForegroundColor Yellow
+    Read-Host
+} else {
+    Write-Host "$($s.quick_mode)" -ForegroundColor Green
+    Write-Host ""
+}
 
 # ============================================================================
 # STEP 1: CHECK PYTHON
 # ============================================================================
 
-Write-Host "`n[1/5] Checking Python installation..." -ForegroundColor Cyan
+Write-Host "`n[1/5] $($s.checking_python)" -ForegroundColor Cyan
 
 try {
     $pythonVersion = python --version 2>&1
-    Write-Host "  [OK] Python found: $pythonVersion" -ForegroundColor Green
+    Write-Host "  [OK] $($s.python_found) $pythonVersion" -ForegroundColor Green
 }
 catch {
-    Write-Host "  [WARNING] Python not found" -ForegroundColor Yellow
-    Write-Host "  Installing Python..." -ForegroundColor Yellow
+    Write-Host "  [WARNING] $($s.python_warning)" -ForegroundColor Yellow
+    Write-Host "  $($s.installing_python)" -ForegroundColor Yellow
     
     try {
         winget --version | Out-Null
@@ -52,51 +273,45 @@ catch {
         
         # Refresh PATH
         $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-        
-        Write-Host "  [OK] Python installed!" -ForegroundColor Green
+
+        Write-Host "  [OK] $($s.python_installed)" -ForegroundColor Green
     }
     catch {
-        Write-Host "  [ERROR] Could not install Python automatically" -ForegroundColor Red
-        Write-Host "  Please install Python manually from: https://www.python.org/downloads/" -ForegroundColor Yellow
-        Write-Host "  Make sure to check 'Add Python to PATH' during installation!" -ForegroundColor Yellow
+        Write-Host "  [ERROR] $($s.python_error)" -ForegroundColor Red
+        Write-Host "  $($s.python_manual)" -ForegroundColor Yellow
+        Write-Host "  $($s.python_path_note)" -ForegroundColor Yellow
         exit 1
     }
 }
 
 # Upgrade pip
-Write-Host "  Upgrading pip..." -ForegroundColor Gray
+Write-Host "  $($s.upgrading_pip)" -ForegroundColor Gray
 python -m pip install --upgrade pip --quiet 2>&1 | Out-Null
 
 # ============================================================================
 # STEP 2: INSTALL OCI CLI
 # ============================================================================
 
-Write-Host "`n[2/5] Installing OCI CLI..." -ForegroundColor Cyan
+Write-Host "`n[2/5] $($s.installing_oci)" -ForegroundColor Cyan
 
 try {
     $ociVersion = oci --version 2>&1
-    Write-Host "  [OK] OCI CLI already installed: $ociVersion" -ForegroundColor Green
-    
-    $update = Read-Host "  Update to latest version? (y/n)"
-    if ($update -eq "y" -or $update -eq "Y") {
-        pip install --upgrade oci-cli
-        Write-Host "  [OK] OCI CLI updated" -ForegroundColor Green
-    }
+    Write-Host "  [OK] $($s.oci_installed) $ociVersion" -ForegroundColor Green
 }
 catch {
-    Write-Host "  Installing OCI CLI (this may take 1-2 minutes)..." -ForegroundColor Yellow
+    Write-Host "  $($s.oci_installing)" -ForegroundColor Yellow
     pip install oci-cli
-    
+
     # Refresh PATH
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-    
+
     try {
         $ociVersion = oci --version 2>&1
-        Write-Host "  [OK] OCI CLI installed: $ociVersion" -ForegroundColor Green
+        Write-Host "  [OK] $($s.oci_success) $ociVersion" -ForegroundColor Green
     }
     catch {
-        Write-Host "  [ERROR] OCI CLI installation failed" -ForegroundColor Red
-        Write-Host "  Please restart PowerShell and try again" -ForegroundColor Yellow
+        Write-Host "  [ERROR] $($s.oci_error)" -ForegroundColor Red
+        Write-Host "  $($s.restart_prompt)" -ForegroundColor Yellow
         exit 1
     }
 }
@@ -105,136 +320,121 @@ catch {
 # STEP 3: CONFIGURE OCI CREDENTIALS
 # ============================================================================
 
-Write-Host "`n[3/5] Configuring OCI credentials..." -ForegroundColor Cyan
+Write-Host "`n[3/5] $($s.config_credentials)" -ForegroundColor Cyan
 
 $configPath = "$env:USERPROFILE\.oci\config"
 
 if (Test-Path $configPath) {
-    Write-Host "  [INFO] OCI config already exists: $configPath" -ForegroundColor Yellow
-    $reconfigure = Read-Host "  Reconfigure? (y/n)"
-    
-    if ($reconfigure -ne "y" -and $reconfigure -ne "Y") {
-        Write-Host "  [OK] Using existing configuration" -ForegroundColor Green
-    }
-    else {
-        Write-Host ""
-        Write-Host "  Starting OCI setup wizard..." -ForegroundColor Yellow
-        Write-Host "  You will need:" -ForegroundColor Yellow
-        Write-Host "    - User OCID (cloud.oracle.com -> User Icon -> My Profile)" -ForegroundColor White
-        Write-Host "    - Tenancy OCID (User Icon -> Tenancy: [Name])" -ForegroundColor White
-        Write-Host "    - Region (e.g., eu-frankfurt-1)" -ForegroundColor White
-        Write-Host ""
-        
-        oci setup config
-    }
+    Write-Host "  [OK] $($s.config_exists)" -ForegroundColor Green
+    $skipKeyPrompt = $true
 }
 else {
     Write-Host ""
-    Write-Host "  Starting OCI setup wizard..." -ForegroundColor Yellow
-    Write-Host "  You will need:" -ForegroundColor Yellow
-    Write-Host "    - User OCID (cloud.oracle.com -> User Icon -> My Profile)" -ForegroundColor White
-    Write-Host "    - Tenancy OCID (User Icon -> Tenancy: [Name])" -ForegroundColor White
-    Write-Host "    - Region (e.g., eu-frankfurt-1)" -ForegroundColor White
+    Write-Host "  $($s.config_wizard)" -ForegroundColor Yellow
+    Write-Host "  $($s.config_need)" -ForegroundColor Yellow
+    Write-Host "    - $($s.config_user)" -ForegroundColor White
+    Write-Host "    - $($s.config_tenancy)" -ForegroundColor White
+    Write-Host "    - $($s.config_region)" -ForegroundColor White
     Write-Host ""
-    
+
     oci setup config
 }
 
 # Verify config was created
 if (-not (Test-Path $configPath)) {
-    Write-Host "  [ERROR] OCI config was not created" -ForegroundColor Red
-    Write-Host "  Please run 'oci setup config' manually" -ForegroundColor Yellow
+    Write-Host "  [ERROR] $($s.config_error)" -ForegroundColor Red
+    Write-Host "  $($s.config_manual)" -ForegroundColor Yellow
     exit 1
 }
 
-# Display public key
+# Display public key (only for new configs)
 $publicKeyPath = "$env:USERPROFILE\.oci\oci_api_key_public.pem"
-if (Test-Path $publicKeyPath) {
+if ((Test-Path $publicKeyPath) -and (-not $skipKeyPrompt)) {
     Write-Host ""
     Write-Host "  ============================================================================" -ForegroundColor Yellow
-    Write-Host "  IMPORTANT: Upload your PUBLIC KEY to OCI Console!" -ForegroundColor Yellow
+    Write-Host "  $($s.key_upload_title)" -ForegroundColor Yellow
     Write-Host "  ============================================================================" -ForegroundColor Yellow
     Write-Host ""
-    Write-Host "  1. Go to: https://cloud.oracle.com" -ForegroundColor White
-    Write-Host "  2. User Icon -> My Profile -> API Keys -> Add API Key" -ForegroundColor White
-    Write-Host "  3. Select 'Paste Public Key'" -ForegroundColor White
-    Write-Host "  4. Paste the key below:" -ForegroundColor White
+    Write-Host "  1. $($s.key_upload_1)" -ForegroundColor White
+    Write-Host "  2. $($s.key_upload_2)" -ForegroundColor White
+    Write-Host "  3. $($s.key_upload_3)" -ForegroundColor White
+    Write-Host "  4. $($s.key_upload_4)" -ForegroundColor White
     Write-Host ""
-    Write-Host "  --- BEGIN PUBLIC KEY ---" -ForegroundColor Yellow
+    Write-Host "  $($s.key_begin)" -ForegroundColor Yellow
     Get-Content $publicKeyPath
-    Write-Host "  --- END PUBLIC KEY ---" -ForegroundColor Yellow
+    Write-Host "  $($s.key_end)" -ForegroundColor Yellow
     Write-Host ""
-    
+
     # Copy to clipboard
     Get-Content $publicKeyPath | Set-Clipboard
-    Write-Host "  [OK] Public key copied to clipboard!" -ForegroundColor Green
+    Write-Host "  [OK] $($s.key_copied)" -ForegroundColor Green
     Write-Host ""
-    Write-Host "  Press ENTER after you've uploaded the key to OCI Console..." -ForegroundColor Yellow
+    Write-Host "  $($s.key_prompt)" -ForegroundColor Yellow
     Read-Host
 }
 
-Write-Host "  [OK] OCI credentials configured" -ForegroundColor Green
+Write-Host "  [OK] $($s.credentials_ok)" -ForegroundColor Green
 
 # ============================================================================
 # STEP 4: FETCH OCIDs
 # ============================================================================
 
-Write-Host "`n[4/5] Fetching OCIDs from your OCI account..." -ForegroundColor Cyan
+Write-Host "`n[4/5] $($s.fetching_ocids)" -ForegroundColor Cyan
 
 # Read tenancy from config
 $configContent = Get-Content $configPath
 $tenancyLine = $configContent | Select-String "tenancy="
 $TENANCY_OCID = ($tenancyLine -split "=")[1].Trim()
 
-Write-Host "  [OK] Tenancy OCID: $TENANCY_OCID" -ForegroundColor Green
+Write-Host "  [OK] $($s.tenancy_ok) $TENANCY_OCID" -ForegroundColor Green
 
 # Fetch VCN and Subnet
-Write-Host "  Fetching VCN..." -ForegroundColor Gray
+Write-Host "  $($s.fetching_vcn)" -ForegroundColor Gray
 try {
     $vcnId = oci network vcn list `
         --compartment-id $TENANCY_OCID `
         --query "data[0].id" `
         --raw-output 2>&1
-    
+
     if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($vcnId)) {
         throw "No VCN found"
     }
-    
-    Write-Host "  [OK] VCN found" -ForegroundColor Green
+
+    Write-Host "  [OK] $($s.vcn_found)" -ForegroundColor Green
 }
 catch {
-    Write-Host "  [ERROR] No VCN found in your OCI account" -ForegroundColor Red
-    Write-Host "  Please create a VCN first:" -ForegroundColor Yellow
-    Write-Host "    1. Go to OCI Console -> Networking -> Virtual Cloud Networks" -ForegroundColor White
-    Write-Host "    2. Click 'Create VCN'" -ForegroundColor White
-    Write-Host "    3. Use 'VCN Wizard' for quick setup" -ForegroundColor White
+    Write-Host "  [ERROR] $($s.vcn_error)" -ForegroundColor Red
+    Write-Host "  $($s.vcn_create)" -ForegroundColor Yellow
+    Write-Host "    1. $($s.vcn_step1)" -ForegroundColor White
+    Write-Host "    2. $($s.vcn_step2)" -ForegroundColor White
+    Write-Host "    3. $($s.vcn_step3)" -ForegroundColor White
     Write-Host ""
-    Write-Host "  Then run this script again." -ForegroundColor Yellow
+    Write-Host "  $($s.vcn_rerun)" -ForegroundColor Yellow
     exit 1
 }
 
-Write-Host "  Fetching Subnet..." -ForegroundColor Gray
+Write-Host "  $($s.fetching_subnet)" -ForegroundColor Gray
 try {
     $SUBNET_ID = oci network subnet list `
         --compartment-id $TENANCY_OCID `
         --vcn-id $vcnId `
         --query "data[0].id" `
         --raw-output 2>&1
-    
+
     if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($SUBNET_ID)) {
         throw "No Subnet found"
     }
-    
-    Write-Host "  [OK] Subnet OCID: $SUBNET_ID" -ForegroundColor Green
+
+    Write-Host "  [OK] $($s.subnet_ok) $SUBNET_ID" -ForegroundColor Green
 }
 catch {
-    Write-Host "  [ERROR] No Subnet found" -ForegroundColor Red
-    Write-Host "  Please create a Subnet in your VCN first" -ForegroundColor Yellow
+    Write-Host "  [ERROR] $($s.subnet_error)" -ForegroundColor Red
+    Write-Host "  $($s.subnet_create)" -ForegroundColor Yellow
     exit 1
 }
 
 # Fetch Ubuntu 24.04 Image
-Write-Host "  Fetching Ubuntu 24.04 Image..." -ForegroundColor Gray
+Write-Host "  $($s.fetching_image)" -ForegroundColor Gray
 try {
     $IMAGE_ID = oci compute image list `
         --compartment-id $TENANCY_OCID `
@@ -243,7 +443,7 @@ try {
         --shape "VM.Standard.A1.Flex" `
         --query "data[0].id" `
         --raw-output 2>&1
-    
+
     if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($IMAGE_ID)) {
         # Fallback: Try without shape filter
         $IMAGE_ID = oci compute image list `
@@ -253,24 +453,24 @@ try {
             --query "data[0].id" `
             --raw-output 2>&1
     }
-    
+
     if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($IMAGE_ID)) {
         throw "No Ubuntu 24.04 image found"
     }
-    
-    Write-Host "  [OK] Image OCID: $IMAGE_ID" -ForegroundColor Green
+
+    Write-Host "  [OK] $($s.image_ok) $IMAGE_ID" -ForegroundColor Green
 }
 catch {
-    Write-Host "  [WARNING] Could not fetch Ubuntu 24.04 image automatically" -ForegroundColor Yellow
-    Write-Host "  Please enter the Image OCID manually:" -ForegroundColor Yellow
-    Write-Host "    1. Go to OCI Console -> Compute -> Instances -> Create Instance" -ForegroundColor White
-    Write-Host "    2. Change Image -> Canonical Ubuntu -> 24.04" -ForegroundColor White
-    Write-Host "    3. Copy the Image OCID" -ForegroundColor White
+    Write-Host "  [WARNING] $($s.image_warning)" -ForegroundColor Yellow
+    Write-Host "  $($s.image_manual)" -ForegroundColor Yellow
+    Write-Host "    1. $($s.image_step1)" -ForegroundColor White
+    Write-Host "    2. $($s.image_step2)" -ForegroundColor White
+    Write-Host "    3. $($s.image_step3)" -ForegroundColor White
     Write-Host ""
-    $IMAGE_ID = Read-Host "  Paste Image OCID here"
-    
+    $IMAGE_ID = Read-Host "  $($s.image_prompt)"
+
     if ([string]::IsNullOrWhiteSpace($IMAGE_ID)) {
-        Write-Host "  [ERROR] No Image OCID provided" -ForegroundColor Red
+        Write-Host "  [ERROR] $($s.image_error)" -ForegroundColor Red
         exit 1
     }
 }
@@ -279,36 +479,36 @@ catch {
 # STEP 5: UPDATE PYTHON SCRIPT
 # ============================================================================
 
-Write-Host "`n[5/5] Updating Python script..." -ForegroundColor Cyan
+Write-Host "`n[5/5] $($s.updating_script)" -ForegroundColor Cyan
 
 $scriptPath = "oci-instance-sniper.py"
 
 if (-not (Test-Path $scriptPath)) {
-    Write-Host "  [ERROR] Python script not found: $scriptPath" -ForegroundColor Red
-    Write-Host "  Please make sure oci-instance-sniper.py is in the same folder as this script" -ForegroundColor Yellow
+    Write-Host "  [ERROR] $($s.script_error) $scriptPath" -ForegroundColor Red
+    Write-Host "  $($s.script_location)" -ForegroundColor Yellow
     exit 1
 }
 
 try {
     # Read script
     $scriptContent = Get-Content $scriptPath -Raw -Encoding UTF8
-    
+
     # Update OCIDs
     $scriptContent = $scriptContent -replace 'COMPARTMENT_ID = "ocid1\.tenancy\.oc1\.\.[a-z0-9]+"', "COMPARTMENT_ID = `"$TENANCY_OCID`""
     $scriptContent = $scriptContent -replace 'IMAGE_ID = "ocid1\.image\.oc1\.[a-z0-9-]+\.[a-z0-9]+"', "IMAGE_ID = `"$IMAGE_ID`""
     $scriptContent = $scriptContent -replace 'SUBNET_ID = "ocid1\.subnet\.oc1\.[a-z0-9-]+\.[a-z0-9]+"', "SUBNET_ID = `"$SUBNET_ID`""
-    
+
     # Create backup
     $backupPath = "oci-instance-sniper.py.backup"
     Copy-Item $scriptPath $backupPath -Force
-    Write-Host "  [OK] Backup created: $backupPath" -ForegroundColor Green
-    
+    Write-Host "  [OK] $($s.backup_created) $backupPath" -ForegroundColor Green
+
     # Save updated script
     $scriptContent | Out-File $scriptPath -Encoding UTF8 -NoNewline
-    Write-Host "  [OK] Python script updated" -ForegroundColor Green
+    Write-Host "  [OK] $($s.script_updated)" -ForegroundColor Green
 }
 catch {
-    Write-Host "  [ERROR] Failed to update Python script" -ForegroundColor Red
+    Write-Host "  [ERROR] $($s.script_update_error)" -ForegroundColor Red
     Write-Host "  $($_.Exception.Message)" -ForegroundColor Red
     exit 1
 }
@@ -319,32 +519,34 @@ catch {
 
 Write-Host ""
 Write-Host "============================================================================" -ForegroundColor Cyan
-Write-Host "                    SETUP COMPLETE!" -ForegroundColor Green
+Write-Host "                    $($s.setup_complete)" -ForegroundColor Green
 Write-Host "============================================================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "Configuration Summary:" -ForegroundColor Yellow
-Write-Host "  Compartment: $TENANCY_OCID" -ForegroundColor White
-Write-Host "  Subnet:      $SUBNET_ID" -ForegroundColor White
-Write-Host "  Image:       $IMAGE_ID" -ForegroundColor White
-Write-Host "  SSH Key:     Configured [OK]" -ForegroundColor Green
+Write-Host "$($s.config_summary)" -ForegroundColor Yellow
+Write-Host "  $($s.compartment) $TENANCY_OCID" -ForegroundColor White
+Write-Host "  $($s.subnet)      $SUBNET_ID" -ForegroundColor White
+Write-Host "  $($s.image)       $IMAGE_ID" -ForegroundColor White
+Write-Host "  $($s.ssh_key)     $($s.configured)" -ForegroundColor Green
 Write-Host ""
 Write-Host "============================================================================" -ForegroundColor Cyan
-Write-Host "NEXT STEPS:" -ForegroundColor Yellow
+Write-Host "$($s.next_steps)" -ForegroundColor Yellow
 Write-Host "============================================================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "Run the sniper script:" -ForegroundColor Yellow
+Write-Host "$($s.run_sniper)" -ForegroundColor Yellow
 Write-Host "  python oci-instance-sniper.py" -ForegroundColor White
 Write-Host ""
-Write-Host "Or run in background:" -ForegroundColor Yellow
+Write-Host "$($s.run_background)" -ForegroundColor Yellow
 Write-Host "  Start-Process powershell -ArgumentList `"-NoExit`", `"-Command`", `"python oci-instance-sniper.py`"" -ForegroundColor White
 Write-Host ""
-Write-Host "Monitor the log:" -ForegroundColor Yellow
+Write-Host "$($s.monitor_log)" -ForegroundColor Yellow
 Write-Host "  Get-Content -Path oci-sniper.log -Wait -Tail 20" -ForegroundColor White
 Write-Host ""
 Write-Host "============================================================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "[!] IMPORTANT: Finding an ARM instance can take hours or days!" -ForegroundColor Yellow
-Write-Host "    Best success rates: overnight and on weekends" -ForegroundColor Yellow
+Write-Host "[!] $($s.important)" -ForegroundColor Yellow
+Write-Host "    $($s.best_times)" -ForegroundColor Yellow
 Write-Host ""
-Write-Host "Good luck! [TARGET]" -ForegroundColor Green
+Write-Host "$($s.good_luck)" -ForegroundColor Green
 Write-Host ""
+Write-Host "$($s.press_close)" -ForegroundColor Yellow
+Read-Host

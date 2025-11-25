@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 OCI Instance Sniper v1.3
 Automatically attempts to create an ARM instance in OCI when capacity becomes available.
@@ -38,13 +38,31 @@ import logging
 import os
 import re
 import smtplib
+import subprocess
 import sys
 import time
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-import oci
+# Auto-install dependencies if missing (UX improvement)
+try:
+    import oci
+    from tenacity import retry, stop_after_attempt
+except ImportError as e:
+    missing_module = str(e).split("'")[1]
+    print(f"Missing dependency: {missing_module}")
+    print("Installing required packages...")
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt", "--quiet"])
+        print("Dependencies installed successfully!")
+        print("Please restart the script.")
+        sys.exit(0)
+    except subprocess.CalledProcessError:
+        print("ERROR: Could not install dependencies automatically.")
+        print("Please run manually: pip install -r requirements.txt")
+        sys.exit(1)
+
 from tenacity import (
     retry,
     stop_after_attempt,

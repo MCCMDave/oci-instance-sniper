@@ -40,7 +40,9 @@ function Load-Config {
 
 function Save-Config {
     param($config)
-    $config | ConvertTo-Json -Depth 10 | Set-Content $CONFIG_FILE -Encoding UTF8
+    $json = $config | ConvertTo-Json -Depth 10
+    # Write UTF-8 without BOM (PowerShell 5.1 compatible)
+    [System.IO.File]::WriteAllLines($CONFIG_FILE, $json)
 }
 
 function Get-DefaultConfig {
