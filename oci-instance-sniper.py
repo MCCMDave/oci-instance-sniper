@@ -44,13 +44,21 @@ from email.mime.multipart import MIMEMultipart
 import json
 import os
 import re
-from tenacity import (
-    retry,
-    stop_after_attempt,
-    wait_exponential,
-    retry_if_exception_type,
-    before_sleep_log,
-)
+
+# Try to import tenacity for retry logic (optional dependency)
+try:
+    from tenacity import (
+        retry,
+        stop_after_attempt,
+        wait_exponential,
+        retry_if_exception_type,
+        before_sleep_log,
+    )
+    TENACITY_AVAILABLE = True
+except ImportError:
+    TENACITY_AVAILABLE = False
+    print("Warning: tenacity library not found. Retry logic will be disabled.")
+    print("Install with: pip install tenacity==8.2.3")
 
 # ============================================================================
 # LANGUAGE SELECTION
@@ -480,24 +488,30 @@ def create_instance_config(availability_domain, reserved_ip_id=None):
     return instance_details
 
 
-@retry(
-    retry=retry_if_exception_type(
-        (
-            oci.exceptions.RequestException,
-            oci.exceptions.ConnectTimeout,
-            ConnectionError,
-            TimeoutError,
-        )
-    ),
-    stop=stop_after_attempt(3),
-    wait=wait_exponential(multiplier=1, min=2, max=10),
-    before_sleep=before_sleep_log(logger, logging.WARNING),
-    reraise=True,
-)
-def _launch_instance_with_retry(compute_client, instance_details, availability_domain):
-    """Internal function to launch instance with retry logic for network errors."""
-    logger.info(f"{t('attempting_create')} {availability_domain}...")
-    return compute_client.launch_instance(instance_details)
+if TENACITY_AVAILABLE:
+    @retry(
+        retry=retry_if_exception_type(
+            (
+                oci.exceptions.RequestException,
+                oci.exceptions.ConnectTimeout,
+                ConnectionError,
+                TimeoutError,
+            )
+        ),
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        before_sleep=before_sleep_log(logger, logging.WARNING),
+        reraise=True,
+    )
+    def _launch_instance_with_retry(compute_client, instance_details, availability_domain):
+        """Internal function to launch instance with retry logic for network errors."""
+        logger.info(f"{t('attempting_create')} {availability_domain}...")
+        return compute_client.launch_instance(instance_details)
+else:
+    def _launch_instance_with_retry(compute_client, instance_details, availability_domain):
+        """Internal function to launch instance (no retry - tenacity not installed)."""
+        logger.info(f"{t('attempting_create')} {availability_domain}...")
+        return compute_client.launch_instance(instance_details)
 
 
 def try_create_instance(compute_client, availability_domain, reserved_ip_id=None):
