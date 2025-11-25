@@ -45,11 +45,11 @@ ssh-config-oci.txt
 *~
 .DS_Store
 
-# Backup files
-*-backup.py
-*.bak
+# Backup files (only in root, backups/ folder is tracked)
+/*-backup.py
+/*.bak
 
 # Environment variables
 .env
 .env.local
-*-backup.ps1
+/*-backup.ps1
