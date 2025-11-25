@@ -1,6 +1,6 @@
-# OCI Instance Sniper - Control Menu
-# Bilingual PowerShell menu system for managing the sniper script
-# Supports: Foreground, Background Jobs, Task Scheduler, Status, Logs
+# OCI Instance Sniper - Control Menu v1.4
+# Bilingual PowerShell menu system with configuration management
+# Supports: Foreground, Background Jobs, Task Scheduler, Status, Logs, Configuration
 
 # ============================================================================
 # CONFIGURATION
@@ -13,8 +13,49 @@ $LANGUAGE = "EN"
 $SCRIPT_NAME = "oci-instance-sniper.py"
 $SCRIPT_PATH = Join-Path $PSScriptRoot $SCRIPT_NAME
 $LOG_FILE = Join-Path $PSScriptRoot "oci-sniper.log"
+$CONFIG_FILE = Join-Path $PSScriptRoot "sniper-config.json"
 $JOB_NAME = "OCI-Instance-Sniper-Job"
 $TASK_NAME = "OCI-Instance-Sniper-Task"
+
+# ============================================================================
+# CONFIG FILE FUNCTIONS
+# ============================================================================
+
+function Load-Config {
+    if (Test-Path $CONFIG_FILE) {
+        try {
+            return Get-Content $CONFIG_FILE -Raw | ConvertFrom-Json
+        } catch {
+            return $null
+        }
+    }
+    return $null
+}
+
+function Save-Config {
+    param($config)
+    $config | ConvertTo-Json -Depth 10 | Set-Content $CONFIG_FILE -Encoding UTF8
+}
+
+function Get-DefaultConfig {
+    return @{
+        instance_name = "oci-instance"
+        ocpus = 2
+        memory_in_gbs = 12
+        image = "ubuntu"
+        retry_delay_seconds = 60
+        max_attempts = 1440
+        region = "eu-frankfurt-1"
+        language = $LANGUAGE
+    }
+}
+
+function Ensure-ConfigExists {
+    if (-not (Test-Path $CONFIG_FILE)) {
+        $defaultConfig = Get-DefaultConfig
+        Save-Config $defaultConfig
+    }
+}
 
 # ============================================================================
 # TRANSLATIONS
@@ -22,16 +63,51 @@ $TASK_NAME = "OCI-Instance-Sniper-Task"
 
 $TRANSLATIONS = @{
     EN = @{
-        title = "OCI Instance Sniper - Control Menu"
+        title = "OCI Instance Sniper - Control Menu v1.4"
         menu_1 = "Start Script (Foreground - see live output)"
         menu_2 = "Start Script (Background - runs hidden until PC off)"
         menu_3 = "Start Script (Task Scheduler - survives reboots)"
         menu_4 = "Check Status"
         menu_5 = "View Live Logs"
         menu_6 = "Stop Script"
+        menu_7 = "Configuration"
         menu_0 = "Exit"
-        prompt = "Enter choice (1-6, 0=Exit)"
-        invalid = "Invalid choice! Please enter 1-6 or 0."
+        prompt = "Enter choice (1-7, 0=Exit)"
+        invalid = "Invalid choice! Please enter 1-7 or 0."
+
+        # Configuration menu
+        config_title = "Configuration Menu"
+        config_current = "Current Configuration"
+        config_1 = "Instance Name"
+        config_2 = "CPUs (OCPUs)"
+        config_3 = "Memory (GB)"
+        config_4 = "Region"
+        config_5 = "Retry Interval (seconds)"
+        config_6 = "Image Type"
+        config_7 = "Language"
+        config_0 = "Back to Main Menu"
+        config_prompt = "Enter option to change (0=Back)"
+        config_saved = "Configuration saved successfully!"
+
+        # Config prompts
+        prompt_instance_name = "Enter instance name"
+        prompt_ocpus = "Enter OCPUs (1-4 for Free Tier)"
+        prompt_memory = "Enter Memory in GB (1-24 for Free Tier)"
+        prompt_region = "Select Region"
+        prompt_interval = "Enter retry interval in seconds (30/60/120 recommended)"
+        prompt_image = "Select Image"
+        prompt_language = "Select Language"
+
+        # Regions
+        region_frankfurt = "Frankfurt (eu-frankfurt-1)"
+        region_paris = "Paris (eu-paris-1)"
+        region_amsterdam = "Amsterdam (eu-amsterdam-1)"
+        region_ashburn = "Ashburn USA (us-ashburn-1)"
+        region_phoenix = "Phoenix USA (us-phoenix-1)"
+
+        # Images
+        image_ubuntu = "Ubuntu 22.04 LTS"
+        image_oracle = "Oracle Linux 8"
 
         # Status messages
         starting_fg = "Starting script in foreground..."
@@ -41,7 +117,6 @@ $TRANSLATIONS = @{
 
         # Status check
         status_title = "Script Status"
-        status_fg_running = "Foreground: Not detectable (check terminal)"
         status_bg_running = "Background Job: RUNNING"
         status_bg_stopped = "Background Job: NOT RUNNING"
         status_task_running = "Task Scheduler: RUNNING"
@@ -74,16 +149,51 @@ $TRANSLATIONS = @{
         press_enter = "Press Enter to continue..."
     }
     DE = @{
-        title = "OCI Instance Sniper - Kontrollmenue"
+        title = "OCI Instance Sniper - Kontrollmenue v1.4"
         menu_1 = "Skript starten (Vordergrund - Live-Ausgabe sichtbar)"
         menu_2 = "Skript starten (Hintergrund - laeuft versteckt bis PC aus)"
         menu_3 = "Skript starten (Aufgabenplanung - ueberlebt Neustarts)"
         menu_4 = "Status pruefen"
         menu_5 = "Live-Logs anzeigen"
         menu_6 = "Skript stoppen"
+        menu_7 = "Konfiguration"
         menu_0 = "Beenden"
-        prompt = "Waehle Option (1-6, 0=Beenden)"
-        invalid = "Ungueltige Auswahl! Bitte 1-6 oder 0 eingeben."
+        prompt = "Waehle Option (1-7, 0=Beenden)"
+        invalid = "Ungueltige Auswahl! Bitte 1-7 oder 0 eingeben."
+
+        # Configuration menu
+        config_title = "Konfigurationsmenue"
+        config_current = "Aktuelle Konfiguration"
+        config_1 = "Instanz-Name"
+        config_2 = "CPUs (OCPUs)"
+        config_3 = "Arbeitsspeicher (GB)"
+        config_4 = "Region"
+        config_5 = "Wiederholungsintervall (Sekunden)"
+        config_6 = "Image-Typ"
+        config_7 = "Sprache"
+        config_0 = "Zurueck zum Hauptmenue"
+        config_prompt = "Option zum Aendern waehlen (0=Zurueck)"
+        config_saved = "Konfiguration erfolgreich gespeichert!"
+
+        # Config prompts
+        prompt_instance_name = "Instanz-Name eingeben"
+        prompt_ocpus = "OCPUs eingeben (1-4 fuer Free Tier)"
+        prompt_memory = "Arbeitsspeicher in GB eingeben (1-24 fuer Free Tier)"
+        prompt_region = "Region auswaehlen"
+        prompt_interval = "Wiederholungsintervall in Sekunden (30/60/120 empfohlen)"
+        prompt_image = "Image auswaehlen"
+        prompt_language = "Sprache auswaehlen"
+
+        # Regions
+        region_frankfurt = "Frankfurt (eu-frankfurt-1)"
+        region_paris = "Paris (eu-paris-1)"
+        region_amsterdam = "Amsterdam (eu-amsterdam-1)"
+        region_ashburn = "Ashburn USA (us-ashburn-1)"
+        region_phoenix = "Phoenix USA (us-phoenix-1)"
+
+        # Images
+        image_ubuntu = "Ubuntu 22.04 LTS"
+        image_oracle = "Oracle Linux 8"
 
         # Status messages
         starting_fg = "Starte Skript im Vordergrund..."
@@ -93,7 +203,6 @@ $TRANSLATIONS = @{
 
         # Status check
         status_title = "Skript-Status"
-        status_fg_running = "Vordergrund: Nicht erkennbar (pruefe Terminal)"
         status_bg_running = "Hintergrund-Job: LAEUFT"
         status_bg_stopped = "Hintergrund-Job: LAEUFT NICHT"
         status_task_running = "Aufgabenplanung: LAEUFT"
@@ -148,6 +257,7 @@ function Show-Menu {
     Write-Host "  4. $(Get-Translation 'menu_4')" -ForegroundColor Cyan
     Write-Host "  5. $(Get-Translation 'menu_5')" -ForegroundColor Blue
     Write-Host "  6. $(Get-Translation 'menu_6')" -ForegroundColor Red
+    Write-Host "  7. $(Get-Translation 'menu_7')" -ForegroundColor White
     Write-Host ""
     Write-Host "  0. $(Get-Translation 'menu_0')" -ForegroundColor DarkGray
     Write-Host ""
@@ -161,6 +271,139 @@ function Check-ScriptExists {
         return $false
     }
     return $true
+}
+
+# ============================================================================
+# CONFIGURATION MENU
+# ============================================================================
+
+function Show-ConfigMenu {
+    while ($true) {
+        Ensure-ConfigExists
+        $config = Load-Config
+
+        Clear-Host
+        Write-Host "================================================================" -ForegroundColor White
+        Write-Host "  $(Get-Translation 'config_title')" -ForegroundColor White
+        Write-Host "================================================================" -ForegroundColor White
+        Write-Host ""
+        Write-Host "  $(Get-Translation 'config_current'):" -ForegroundColor Cyan
+        Write-Host "  - Instance Name: $($config.instance_name)" -ForegroundColor Gray
+        Write-Host "  - CPUs: $($config.ocpus)" -ForegroundColor Gray
+        Write-Host "  - Memory: $($config.memory_in_gbs) GB" -ForegroundColor Gray
+        Write-Host "  - Region: $($config.region)" -ForegroundColor Gray
+        Write-Host "  - Retry Interval: $($config.retry_delay_seconds)s" -ForegroundColor Gray
+        Write-Host "  - Image: $($config.image)" -ForegroundColor Gray
+        Write-Host "  - Language: $($config.language)" -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "  1. $(Get-Translation 'config_1')" -ForegroundColor Green
+        Write-Host "  2. $(Get-Translation 'config_2')" -ForegroundColor Green
+        Write-Host "  3. $(Get-Translation 'config_3')" -ForegroundColor Green
+        Write-Host "  4. $(Get-Translation 'config_4')" -ForegroundColor Green
+        Write-Host "  5. $(Get-Translation 'config_5')" -ForegroundColor Green
+        Write-Host "  6. $(Get-Translation 'config_6')" -ForegroundColor Green
+        Write-Host "  7. $(Get-Translation 'config_7')" -ForegroundColor Green
+        Write-Host ""
+        Write-Host "  0. $(Get-Translation 'config_0')" -ForegroundColor DarkGray
+        Write-Host ""
+
+        $choice = Read-Host "$(Get-Translation 'config_prompt')"
+
+        switch ($choice) {
+            "1" {
+                $newName = Read-Host "$(Get-Translation 'prompt_instance_name') [$($config.instance_name)]"
+                if ($newName) { $config.instance_name = $newName }
+                Save-Config $config
+                Write-Host "$(Get-Translation 'config_saved')" -ForegroundColor Green
+                Start-Sleep -Seconds 1
+            }
+            "2" {
+                $newCPU = Read-Host "$(Get-Translation 'prompt_ocpus') [$($config.ocpus)]"
+                if ($newCPU -and $newCPU -match '^\d+$' -and [int]$newCPU -ge 1 -and [int]$newCPU -le 4) {
+                    $config.ocpus = [int]$newCPU
+                    Save-Config $config
+                    Write-Host "$(Get-Translation 'config_saved')" -ForegroundColor Green
+                    Start-Sleep -Seconds 1
+                }
+            }
+            "3" {
+                $newMem = Read-Host "$(Get-Translation 'prompt_memory') [$($config.memory_in_gbs)]"
+                if ($newMem -and $newMem -match '^\d+$' -and [int]$newMem -ge 1 -and [int]$newMem -le 24) {
+                    $config.memory_in_gbs = [int]$newMem
+                    Save-Config $config
+                    Write-Host "$(Get-Translation 'config_saved')" -ForegroundColor Green
+                    Start-Sleep -Seconds 1
+                }
+            }
+            "4" {
+                Clear-Host
+                Write-Host "$(Get-Translation 'prompt_region'):" -ForegroundColor Cyan
+                Write-Host "  1. $(Get-Translation 'region_frankfurt')"
+                Write-Host "  2. $(Get-Translation 'region_paris')"
+                Write-Host "  3. $(Get-Translation 'region_amsterdam')"
+                Write-Host "  4. $(Get-Translation 'region_ashburn')"
+                Write-Host "  5. $(Get-Translation 'region_phoenix')"
+                $regionChoice = Read-Host "Choice (1-5)"
+                $regionMap = @{
+                    "1" = "eu-frankfurt-1"
+                    "2" = "eu-paris-1"
+                    "3" = "eu-amsterdam-1"
+                    "4" = "us-ashburn-1"
+                    "5" = "us-phoenix-1"
+                }
+                if ($regionMap.ContainsKey($regionChoice)) {
+                    $config.region = $regionMap[$regionChoice]
+                    Save-Config $config
+                    Write-Host "$(Get-Translation 'config_saved')" -ForegroundColor Green
+                    Start-Sleep -Seconds 1
+                }
+            }
+            "5" {
+                $newInterval = Read-Host "$(Get-Translation 'prompt_interval') [$($config.retry_delay_seconds)]"
+                if ($newInterval -and $newInterval -match '^\d+$' -and [int]$newInterval -ge 10) {
+                    $config.retry_delay_seconds = [int]$newInterval
+                    Save-Config $config
+                    Write-Host "$(Get-Translation 'config_saved')" -ForegroundColor Green
+                    Start-Sleep -Seconds 1
+                }
+            }
+            "6" {
+                Clear-Host
+                Write-Host "$(Get-Translation 'prompt_image'):" -ForegroundColor Cyan
+                Write-Host "  1. $(Get-Translation 'image_ubuntu')"
+                Write-Host "  2. $(Get-Translation 'image_oracle')"
+                $imageChoice = Read-Host "Choice (1-2)"
+                if ($imageChoice -eq "1") { $config.image = "ubuntu" }
+                elseif ($imageChoice -eq "2") { $config.image = "oracle" }
+                if ($imageChoice -in @("1","2")) {
+                    Save-Config $config
+                    Write-Host "$(Get-Translation 'config_saved')" -ForegroundColor Green
+                    Start-Sleep -Seconds 1
+                }
+            }
+            "7" {
+                Clear-Host
+                Write-Host "$(Get-Translation 'prompt_language'):" -ForegroundColor Cyan
+                Write-Host "  1. English"
+                Write-Host "  2. Deutsch"
+                $langChoice = Read-Host "Choice (1-2)"
+                if ($langChoice -eq "1") {
+                    $config.language = "EN"
+                    $script:LANGUAGE = "EN"
+                }
+                elseif ($langChoice -eq "2") {
+                    $config.language = "DE"
+                    $script:LANGUAGE = "DE"
+                }
+                if ($langChoice -in @("1","2")) {
+                    Save-Config $config
+                    Write-Host "$(Get-Translation 'config_saved')" -ForegroundColor Green
+                    Start-Sleep -Seconds 1
+                }
+            }
+            "0" { return }
+        }
+    }
 }
 
 # ============================================================================
@@ -285,6 +528,12 @@ function Show-Status {
         Write-Host "  [i]  Log File: $([math]::Round($logSize, 2)) KB" -ForegroundColor Cyan
     }
 
+    # Show current config
+    Ensure-ConfigExists
+    $config = Load-Config
+    Write-Host ""
+    Write-Host "  [i]  Current Config: $($config.region), $($config.ocpus) CPUs, $($config.memory_in_gbs)GB, $($config.retry_delay_seconds)s" -ForegroundColor Cyan
+
     Write-Host ""
     Write-Host "$(Get-Translation 'press_enter')" -ForegroundColor DarkGray
     Read-Host
@@ -350,6 +599,9 @@ function Stop-Script {
 # MAIN LOOP
 # ============================================================================
 
+# Ensure config exists on startup
+Ensure-ConfigExists
+
 while ($true) {
     Show-Menu
 
@@ -362,6 +614,7 @@ while ($true) {
         "4" { Show-Status }
         "5" { Show-LiveLogs }
         "6" { Stop-Script }
+        "7" { Show-ConfigMenu }
         "0" {
             Clear-Host
             exit

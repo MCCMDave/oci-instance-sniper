@@ -34,7 +34,26 @@ from email.mime.multipart import MIMEMultipart
 # ============================================================================
 # LANGUAGE SELECTION
 # ============================================================================
-LANGUAGE = "EN"  # "EN" for English, "DE" for German
+
+# ============================================================================
+# CONFIG FILE SUPPORT (NEW in v1.4)
+# ============================================================================
+def load_config_file():
+    """Load configuration from sniper-config.json if it exists"""
+    config_file = os.path.join(os.path.dirname(__file__), "sniper-config.json")
+    if os.path.exists(config_file):
+        try:
+            with open(config_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Warning: Could not load config file: {e}")
+            return {}
+    return {}
+
+# Load config file (will override hardcoded values below if present)
+CONFIG_FILE = load_config_file()
+
+LANGUAGE = CONFIG_FILE.get("language", "EN")  # "EN" for English, "DE" for German
 
 # ============================================================================
 # CONFIGURATION - CUSTOMIZE THESE VALUES
@@ -47,8 +66,8 @@ CONFIG_PROFILE = "DEFAULT"
 COMPARTMENT_ID = "ocid1.tenancy.oc1..your_compartment_id_here"  # Your compartment OCID
 AVAILABILITY_DOMAINS = ["AD-1", "AD-2", "AD-3"]  # Try all ADs
 SHAPE = "VM.Standard.A1.Flex"
-OCPUS = 2
-MEMORY_IN_GBS = 12
+OCPUS = CONFIG_FILE.get("ocpus", 2)
+MEMORY_IN_GBS = CONFIG_FILE.get("memory_in_gbs", 12)
 
 # Image Configuration (Ubuntu 24.04)
 IMAGE_ID = "ocid1.image.oc1.eu-frankfurt-1.your_image_id_here"  # Ubuntu 24.04 image OCID
@@ -67,11 +86,11 @@ RESERVED_PUBLIC_IP = None  # Will be set during runtime
 SSH_PUBLIC_KEY = """your_ssh_public_key_here"""
 
 # Retry Configuration
-RETRY_DELAY_SECONDS = 60  # Wait 60 seconds between attempts
-MAX_ATTEMPTS = 1440  # Try for 24 hours (1440 * 60 seconds)
+RETRY_DELAY_SECONDS = CONFIG_FILE.get("retry_delay_seconds", 60)  # Wait 60 seconds between attempts
+MAX_ATTEMPTS = CONFIG_FILE.get("max_attempts", 1440)  # Try for 24 hours (1440 * 60 seconds)
 
 # Instance Name
-INSTANCE_NAME = "nextcloud-backup-instance"
+INSTANCE_NAME = CONFIG_FILE.get("instance_name", "oci-instance")
 
 # ============================================================================
 # EMAIL NOTIFICATIONS (OPTIONAL - Disabled by default)
@@ -205,6 +224,8 @@ def t(key):
 # Configure UTF-8 encoding for Windows console
 if sys.platform == "win32":
     import io
+import json
+import os
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 

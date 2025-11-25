@@ -182,6 +182,16 @@ Das interaktive Kontrollmenü macht die Verwaltung des Sniper-Skripts einfach!
 ```
 
 **Features:**
+
+**Konfigurationsverwaltung:**
+- Alle Einstellungen per Menue aenderbar (kein Code-Edit!)
+- Instanz-Name, CPUs (1-4), Arbeitsspeicher (1-24GB)
+- Regionsauswahl (Frankfurt/Paris/Amsterdam/Ashburn/Phoenix)
+- Wiederholungsintervall (30/60/120 Sekunden empfohlen)
+- Image-Typ (Ubuntu 22.04 / Oracle Linux 8)
+- Sprachumschaltung (EN/DE)
+- Speichert in sniper-config.json
+
 1. **Vordergrund-Modus** - Im Terminal ausführen, alle Ausgaben live sehen
 2. **Hintergrund-Job-Modus** - Läuft versteckt im Hintergrund bis PC-Neustart
 3. **Aufgabenplanungs-Modus** - Überlebt Neustarts, startet automatisch

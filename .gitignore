@@ -51,3 +51,4 @@ ssh-config-oci.txt
 # Environment variables
 .env
 .env.local
+*-backup.ps1

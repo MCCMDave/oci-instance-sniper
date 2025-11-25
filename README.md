@@ -172,7 +172,7 @@ LANGUAGE = "EN"  # or "DE" for German
 
 All messages, logs, and prompts in your language!
 
-### **Control Menu (v1.3 - NEW!)**
+### **Control Menu (v1.4 - NEW!)**
 
 The interactive control menu makes it easy to manage the sniper script!
 
@@ -182,6 +182,16 @@ The interactive control menu makes it easy to manage the sniper script!
 ```
 
 **Features:**
+
+**Configuration Management:**
+- All settings configurable via menu (no code editing!)
+- Instance name, CPUs (1-4), Memory (1-24GB)
+- Region selection (Frankfurt/Paris/Amsterdam/Ashburn/Phoenix)
+- Retry interval (30/60/120 seconds recommended)
+- Image type (Ubuntu 22.04 / Oracle Linux 8)
+- Language switching (EN/DE)
+- Saves to sniper-config.json
+
 1. **Foreground Mode** - Run in terminal, see all output live
 2. **Background Job Mode** - Runs hidden in background until PC shutdown
 3. **Task Scheduler Mode** - Survives reboots, starts automatically
