@@ -67,6 +67,24 @@ No manual configuration needed!
 - 🛑 **Stop Control**: Safely stop all running instances
 - 🌍 **Bilingual**: Full English and German support
 
+## 🆕 What's New in v1.3
+
+### **Network Resilience (NEW!)**
+- ✅ **Automatic Retry Logic**: Network errors are automatically retried (3 attempts with exponential backoff)
+- ✅ **Robust Operation**: Handles temporary connection issues, timeouts, and API slowdowns
+- ✅ **Smart Backoff**: Waits 2s → 4s → 8s between retries to avoid overwhelming the API
+
+### **Code Quality & CI/CD (NEW!)**
+- ✅ **GitHub Actions**: Automatic linting and testing on every commit
+- ✅ **Pre-commit Hooks**: Code is validated locally before commits
+- ✅ **Enhanced Validation**: SSH keys, config values, and JSON are validated
+
+### **Bug Fixes**
+- ✅ Fixed import ordering issue that could cause crashes
+- ✅ Improved config file error handling with fallback to defaults
+- ✅ Better SSH key validation with regex patterns
+- ✅ Pinned dependency versions for stability
+
 ## 🆕 What's New in v1.2
 
 ### **Instance Status Monitoring**

@@ -1,1 +1,5 @@
-oci>=2.100.0
+# OCI SDK - pinned to latest stable version
+oci==2.133.0
+
+# Retry logic for network resilience
+tenacity==8.2.3

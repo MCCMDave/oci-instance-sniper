@@ -32,6 +32,7 @@ oci-config.json
 # Logs
 *.log
 oci-sniper.log
+control-menu.log
 
 # SSH Config (generated)
 ssh-config-oci.txt

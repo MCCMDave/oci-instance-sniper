@@ -1,6 +1,11 @@
-# OCI Instance Sniper - Control Menu v1.4
+# OCI Instance Sniper - Control Menu v1.5
 # Bilingual PowerShell menu system with configuration management
 # Supports: Foreground, Background Jobs, Task Scheduler, Status, Logs, Configuration
+#
+# Changelog v1.5:
+# - Added comprehensive logging to control-menu.log
+# - Improved error handling and status reporting
+# - Better integration with main Python script
 
 # ============================================================================
 # CONFIGURATION
@@ -14,6 +19,7 @@ $SCRIPT_NAME = "oci-instance-sniper.py"
 $SCRIPT_PATH = Join-Path $PSScriptRoot $SCRIPT_NAME
 $LOG_FILE = Join-Path $PSScriptRoot "oci-sniper.log"
 $CONFIG_FILE = Join-Path $PSScriptRoot "sniper-config.json"
+$MENU_LOG_FILE = Join-Path $PSScriptRoot "control-menu.log"
 $JOB_NAME = "OCI-Instance-Sniper-Job"
 $TASK_NAME = "OCI-Instance-Sniper-Task"
 
@@ -260,6 +266,16 @@ $TRANSLATIONS = @{
 # HELPER FUNCTIONS
 # ============================================================================
 
+function Write-MenuLog {
+    param(
+        [string]$message,
+        [string]$level = "INFO"
+    )
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logMessage = "$timestamp - $level - $message"
+    Add-Content -Path $MENU_LOG_FILE -Value $logMessage -Encoding UTF8
+}
+
 function Get-Translation {
     param([string]$key)
     return $TRANSLATIONS[$LANGUAGE][$key]
@@ -464,12 +480,14 @@ function Show-ConfigMenu {
 function Start-Foreground {
     if (-not (Check-ScriptExists)) { return }
 
+    Write-MenuLog "Starting script in foreground mode"
     Write-Host "$(Get-Translation 'starting_fg')" -ForegroundColor Green
     Write-Host ""
 
     # Run Python script directly
     python $SCRIPT_PATH
 
+    Write-MenuLog "Foreground script execution completed"
     Write-Host ""
     Write-Host "$(Get-Translation 'press_enter')" -ForegroundColor DarkGray
     Read-Host
@@ -481,12 +499,14 @@ function Start-BackgroundJob {
     # Check if job already running
     $existingJob = Get-Job -Name $JOB_NAME -ErrorAction SilentlyContinue
     if ($existingJob) {
+        Write-MenuLog "Background job already running - skipping start" -level "WARNING"
         Write-Host "$(Get-Translation 'job_exists')" -ForegroundColor Yellow
         Write-Host "$(Get-Translation 'press_enter')" -ForegroundColor DarkGray
         Read-Host
         return
     }
 
+    Write-MenuLog "Starting background job"
     Write-Host "$(Get-Translation 'starting_bg')" -ForegroundColor Yellow
 
     # Start as PowerShell background job
@@ -497,6 +517,7 @@ function Start-BackgroundJob {
 
     Start-Sleep -Seconds 2
 
+    Write-MenuLog "Background job started successfully (Job ID: $JOB_NAME)"
     Write-Host "$(Get-Translation 'job_started')" -ForegroundColor Green
     Write-Host ""
     Write-Host "$(Get-Translation 'press_enter')" -ForegroundColor DarkGray
@@ -506,11 +527,13 @@ function Start-BackgroundJob {
 function Start-TaskScheduler {
     if (-not (Check-ScriptExists)) { return }
 
+    Write-MenuLog "Starting Task Scheduler setup"
     Write-Host "$(Get-Translation 'starting_task')" -ForegroundColor Magenta
 
     # Check if task already exists
     $existingTask = Get-ScheduledTask -TaskName $TASK_NAME -ErrorAction SilentlyContinue
     if ($existingTask) {
+        Write-MenuLog "Removing existing task: $TASK_NAME" -level "WARNING"
         Write-Host "$(Get-Translation 'task_exists')" -ForegroundColor Yellow
         Unregister-ScheduledTask -TaskName $TASK_NAME -Confirm:$false
     }
@@ -531,10 +554,12 @@ function Start-TaskScheduler {
         # Start task
         Start-ScheduledTask -TaskName $TASK_NAME
 
+        Write-MenuLog "Task Scheduler task created and started successfully"
         Write-Host "$(Get-Translation 'task_created')" -ForegroundColor Green
         Write-Host "$(Get-Translation 'task_started')" -ForegroundColor Green
     }
     catch {
+        Write-MenuLog "Task Scheduler creation failed: $_" -level "ERROR"
         Write-Host "$(Get-Translation 'task_create_error')" -ForegroundColor Red
         Write-Host "Error: $_" -ForegroundColor Red
     }
@@ -616,6 +641,7 @@ function Stop-Script {
     Write-Host "================================================================" -ForegroundColor Red
     Write-Host ""
 
+    Write-MenuLog "Stopping all running script instances"
     $stoppedAny = $false
 
     # Stop Background Job
@@ -624,6 +650,7 @@ function Stop-Script {
         Write-Host "$(Get-Translation 'stop_bg')" -ForegroundColor Yellow
         Stop-Job -Name $JOB_NAME
         Remove-Job -Name $JOB_NAME -Force
+        Write-MenuLog "Background job stopped"
         Write-Host "$(Get-Translation 'job_stopped')" -ForegroundColor Green
         $stoppedAny = $true
     }
@@ -633,11 +660,13 @@ function Stop-Script {
     if ($task) {
         Write-Host "$(Get-Translation 'stop_task')" -ForegroundColor Yellow
         Stop-ScheduledTask -TaskName $TASK_NAME -ErrorAction SilentlyContinue
+        Write-MenuLog "Task Scheduler task stopped"
         Write-Host "$(Get-Translation 'stop_success')" -ForegroundColor Green
         $stoppedAny = $true
     }
 
     if (-not $stoppedAny) {
+        Write-MenuLog "No running instances found to stop"
         Write-Host "$(Get-Translation 'stop_nothing')" -ForegroundColor Yellow
     }
 
@@ -653,6 +682,9 @@ function Stop-Script {
 # Ensure config exists on startup
 Ensure-ConfigExists
 
+# Log menu startup
+Write-MenuLog "Control Menu started (Language: $LANGUAGE)"
+
 while ($true) {
     Show-Menu
 
@@ -665,12 +697,17 @@ while ($true) {
         "4" { Show-Status }
         "5" { Show-LiveLogs }
         "6" { Stop-Script }
-        "7" { Show-ConfigMenu }
+        "7" {
+            Write-MenuLog "Configuration menu accessed"
+            Show-ConfigMenu
+        }
         "0" {
+            Write-MenuLog "Control Menu exited by user"
             Clear-Host
             exit
         }
         default {
+            Write-MenuLog "Invalid menu choice: $choice" -level "WARNING"
             Write-Host ""
             Write-Host "$(Get-Translation 'invalid')" -ForegroundColor Red
             Start-Sleep -Seconds 2

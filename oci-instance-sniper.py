@@ -1,10 +1,21 @@
 #!/usr/bin/env python3
 """
-OCI Instance Sniper v1.2
+OCI Instance Sniper v1.3
 Automatically attempts to create an ARM instance in OCI when capacity becomes available.
 
 Author: Dave Vaupel
 Date: 2025-11-25
+
+Changelog v1.3:
+- Added automatic retry logic with exponential backoff for network errors
+- Added tenacity library for robust API calls
+- Fixed import ordering bug (json, os, re now properly imported)
+- Improved config validation with fallback to defaults
+- Enhanced SSH key validation with regex patterns
+- Pinned dependency versions (oci==2.133.0, tenacity==8.2.3)
+- Added GitHub Actions CI/CD pipeline
+- Added pre-commit hooks for code quality
+- Added PowerShell control menu logging
 
 Changelog v1.2:
 - Added instance status monitoring (waits for RUNNING state)
@@ -30,6 +41,16 @@ import sys
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import json
+import os
+import re
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
+    before_sleep_log,
+)
 
 # ============================================================================
 # LANGUAGE SELECTION
@@ -44,7 +65,36 @@ def load_config_file():
     if os.path.exists(config_file):
         try:
             with open(config_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                config = json.load(f)
+                # Validate config values
+                if not isinstance(config, dict):
+                    print("Warning: Config file is not a valid JSON object. Using defaults.")
+                    return {}
+                # Validate OCPUs (1-4 for Free Tier)
+                if 'ocpus' in config:
+                    if not isinstance(config['ocpus'], int) or config['ocpus'] < 1 or config['ocpus'] > 4:
+                        print(f"Warning: Invalid OCPUs value: {config['ocpus']}. Must be 1-4. Using default: 2")
+                        config['ocpus'] = 2
+                # Validate Memory (1-24 GB for Free Tier)
+                if 'memory_in_gbs' in config:
+                    if not isinstance(config['memory_in_gbs'], int) or config['memory_in_gbs'] < 1 or config['memory_in_gbs'] > 24:
+                        print(f"Warning: Invalid Memory value: {config['memory_in_gbs']}. Must be 1-24 GB. Using default: 12")
+                        config['memory_in_gbs'] = 12
+                # Validate retry delay (minimum 10 seconds)
+                if 'retry_delay_seconds' in config:
+                    if not isinstance(config['retry_delay_seconds'], int) or config['retry_delay_seconds'] < 10:
+                        print(f"Warning: Invalid retry delay: {config['retry_delay_seconds']}. Must be >= 10s. Using default: 60")
+                        config['retry_delay_seconds'] = 60
+                # Validate max attempts (minimum 1)
+                if 'max_attempts' in config:
+                    if not isinstance(config['max_attempts'], int) or config['max_attempts'] < 1:
+                        print(f"Warning: Invalid max attempts: {config['max_attempts']}. Must be >= 1. Using default: 1440")
+                        config['max_attempts'] = 1440
+                return config
+        except json.JSONDecodeError as e:
+            print(f"Error: Config file is corrupted (invalid JSON): {e}")
+            print("Using default configuration. Please check sniper-config.json")
+            return {}
         except Exception as e:
             print(f"Warning: Could not load config file: {e}")
             return {}
@@ -224,8 +274,6 @@ def t(key):
 # Configure UTF-8 encoding for Windows console
 if sys.platform == "win32":
     import io
-import json
-import os
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
@@ -432,15 +480,34 @@ def create_instance_config(availability_domain, reserved_ip_id=None):
     return instance_details
 
 
+@retry(
+    retry=retry_if_exception_type(
+        (
+            oci.exceptions.RequestException,
+            oci.exceptions.ConnectTimeout,
+            ConnectionError,
+            TimeoutError,
+        )
+    ),
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    before_sleep=before_sleep_log(logger, logging.WARNING),
+    reraise=True,
+)
+def _launch_instance_with_retry(compute_client, instance_details, availability_domain):
+    """Internal function to launch instance with retry logic for network errors."""
+    logger.info(f"{t('attempting_create')} {availability_domain}...")
+    return compute_client.launch_instance(instance_details)
+
+
 def try_create_instance(compute_client, availability_domain, reserved_ip_id=None):
     """Attempt to create an instance in the specified availability domain."""
 
     try:
         instance_details = create_instance_config(availability_domain, reserved_ip_id)
 
-        logger.info(f"{t('attempting_create')} {availability_domain}...")
-
-        response = compute_client.launch_instance(instance_details)
+        # Call with retry logic for network errors
+        response = _launch_instance_with_retry(compute_client, instance_details, availability_domain)
 
         logger.info(f"✅ {t('success')} {availability_domain}!")
         logger.info(f"{t('instance_ocid')}: {response.data.id}")
@@ -462,9 +529,38 @@ def try_create_instance(compute_client, availability_domain, reserved_ip_id=None
             logger.error(f"❌ {t('error_in_ad')} {availability_domain}: {e.message}")
             return False, None
 
+    except (
+        oci.exceptions.RequestException,
+        oci.exceptions.ConnectTimeout,
+        ConnectionError,
+        TimeoutError,
+    ) as e:
+        # Network errors after all retries exhausted
+        logger.error(f"❌ Network error in {availability_domain} after retries: {str(e)}")
+        return False, None
+
     except Exception as e:
         logger.error(f"❌ {t('unexpected_error')} {availability_domain}: {str(e)}")
         return False, None
+
+
+def validate_ssh_key(ssh_key):
+    """Validate SSH public key format"""
+    ssh_key = ssh_key.strip()
+
+    # Check for common SSH key patterns
+    valid_patterns = [
+        r'^ssh-rsa AAAA[0-9A-Za-z+/]+[=]{0,3}(\s.*)?$',  # RSA
+        r'^ssh-ed25519 AAAA[0-9A-Za-z+/]+[=]{0,3}(\s.*)?$',  # Ed25519
+        r'^ecdsa-sha2-nistp256 AAAA[0-9A-Za-z+/]+[=]{0,3}(\s.*)?$',  # ECDSA 256
+        r'^ecdsa-sha2-nistp384 AAAA[0-9A-Za-z+/]+[=]{0,3}(\s.*)?$',  # ECDSA 384
+        r'^ecdsa-sha2-nistp521 AAAA[0-9A-Za-z+/]+[=]{0,3}(\s.*)?$',  # ECDSA 521
+    ]
+
+    for pattern in valid_patterns:
+        if re.match(pattern, ssh_key):
+            return True
+    return False
 
 
 def validate_configuration():
@@ -484,6 +580,8 @@ def validate_configuration():
     # Check SSH key
     if "your_ssh_public_key_here" in SSH_PUBLIC_KEY or len(SSH_PUBLIC_KEY.strip()) < 100:
         errors.append("SSH_PUBLIC_KEY is not configured")
+    elif not validate_ssh_key(SSH_PUBLIC_KEY):
+        errors.append("SSH_PUBLIC_KEY has invalid format (must be ssh-rsa, ssh-ed25519, or ecdsa-sha2-*)")
 
     # Validate OCID format
     if not COMPARTMENT_ID.startswith("ocid1."):
