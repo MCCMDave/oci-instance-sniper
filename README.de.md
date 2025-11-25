@@ -6,15 +6,28 @@ Erstellt automatisch ARM-Instanzen (VM.Standard.A1.Flex) in Oracle Cloud Infrast
 
 ## 🚀 Schnellstart
 
+### Option 1: Interaktives Kontrollmenü (Empfohlen)
 ```powershell
 # 1. Setup (einmalig)
 .\setup.ps1
 
-# 2. Ausführen
+# 2. Kontrollmenü starten
+.\control-menu.ps1
+```
+
+Das Menü ermöglicht:
+- Start im Vordergrund (Live-Ausgabe sichtbar)
+- Start im Hintergrund (läuft versteckt bis PC aus)
+- Start via Aufgabenplanung (überlebt Neustarts)
+- Status prüfen, Logs anzeigen, Skript stoppen
+
+### Option 2: Direkte Ausführung
+```powershell
+# Direkt im Terminal ausführen
 python oci-instance-sniper.py
 ```
 
-Das war's! Das Skript läuft 24 Stunden und prüft alle 60 Sekunden.
+Das Skript läuft 24 Stunden und prüft alle 60 Sekunden.
 
 ## 📋 Was du brauchst
 
@@ -34,15 +47,25 @@ Keine manuelle Konfiguration nötig!
 
 ## 🎯 Features
 
+### Kern-Features
 - ✅ **Smart Retry**: Versucht alle 60 Sekunden für 24 Stunden
 - ✅ **Multi-AZ**: Testet alle 3 Availability Domains
 - ✅ **Instanz-Status-Überwachung**: Wartet automatisch auf RUNNING Status
 - ✅ **Auto Public IP Abruf**: Zeigt IP sofort an wenn bereit
 - ✅ **SSH Config Generator**: Erstellt fertige SSH-Konfiguration
 - ✅ **Reserved IP Support**: Optionale statische IP (empfohlen!)
-- ✅ **Zweisprachig**: Deutsch und Englisch Support
 - 🔔 **E-Mail-Benachrichtigungen**: Werde benachrichtigt wenn Instanz bereit ist *(Optional)*
 - 📊 **Umfassendes Logging**: Alles wird in `oci-sniper.log` protokolliert
+
+### Kontrollmenü-Features (NEU!)
+- 🎮 **Interaktives Menü**: Einfach zu bedienende Steuerungsoberfläche
+- 🖥️ **Vordergrund-Modus**: Live-Ausgabe im Terminal sehen
+- 🔄 **Hintergrund-Modus**: Läuft versteckt bis PC-Neustart
+- 📅 **Aufgabenplanungs-Modus**: Überlebt System-Neustarts
+- 📊 **Status-Prüfung**: Siehst auf einen Blick was läuft
+- 📜 **Live-Log-Viewer**: Fortschritt in Echtzeit überwachen
+- 🛑 **Stopp-Kontrolle**: Stoppt alle laufenden Instanzen sicher
+- 🌍 **Zweisprachig**: Volle Unterstützung für Deutsch und Englisch
 
 ## 🆕 Neu in v1.2
 
@@ -148,6 +171,36 @@ LANGUAGE = "DE"  # oder "EN" für Englisch
 ```
 
 Alle Meldungen, Logs und Prompts in deiner Sprache!
+
+### **Kontrollmenü (v1.3 - NEU!)**
+
+Das interaktive Kontrollmenü macht die Verwaltung des Sniper-Skripts einfach!
+
+**Verwendung:**
+```powershell
+.\control-menu.ps1
+```
+
+**Features:**
+1. **Vordergrund-Modus** - Im Terminal ausführen, alle Ausgaben live sehen
+2. **Hintergrund-Job-Modus** - Läuft versteckt im Hintergrund bis PC-Neustart
+3. **Aufgabenplanungs-Modus** - Überlebt Neustarts, startet automatisch
+4. **Status-Prüfung** - Siehst sofort was läuft
+5. **Live-Logs** - Logs in Echtzeit ansehen (Strg+C zum Beenden)
+6. **Skript stoppen** - Stoppt alle laufenden Instanzen sicher
+
+**Spracheinstellung:**
+Bearbeite `control-menu.ps1` um die Sprache zu ändern:
+```powershell
+$LANGUAGE = "DE"  # oder "EN" für Englisch
+```
+
+**Mehrere Instanzen:**
+Ja! Du kannst mehrere Instanzen gleichzeitig ausführen:
+- Mehrere Hintergrund-Jobs auf demselben PC ✅
+- Mehrere PCs die das Skript ausführen ✅
+- Unterschiedliche Regionen/Konfigurationen ✅
+
 
 ## 📊 Konfiguration (Optional)
 

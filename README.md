@@ -6,15 +6,28 @@ Automatically creates ARM instances (VM.Standard.A1.Flex) in Oracle Cloud Infras
 
 ## 🚀 Quick Start
 
+### Option 1: Interactive Control Menu (Recommended)
 ```powershell
 # 1. Setup (one time)
 .\setup.ps1
 
-# 2. Run
+# 2. Run Control Menu
+.\control-menu.ps1
+```
+
+The menu lets you:
+- Start in foreground (see live output)
+- Start in background (runs hidden until PC off)
+- Start via Task Scheduler (survives reboots)
+- Check status, view logs, stop script
+
+### Option 2: Direct Execution
+```powershell
+# Run directly in terminal
 python oci-instance-sniper.py
 ```
 
-That's it! The script will run for 24 hours, checking every 60 seconds.
+The script will run for 24 hours, checking every 60 seconds.
 
 ## 📋 What You Need
 
@@ -34,15 +47,25 @@ No manual configuration needed!
 
 ## 🎯 Features
 
+### Core Features
 - ✅ **Smart Retry**: Attempts every 60 seconds for 24 hours
 - ✅ **Multi-AZ**: Tests all 3 Availability Domains
 - ✅ **Instance Status Monitoring**: Waits for RUNNING state automatically
 - ✅ **Auto Public IP Retrieval**: Shows IP immediately when ready
 - ✅ **SSH Config Generator**: Creates ready-to-use SSH config
 - ✅ **Reserved IP Support**: Optional static IP (recommended!)
-- ✅ **Bilingual**: English and German language support
 - 🔔 **Email Notifications**: Get notified when instance is ready *(Optional)*
 - 📊 **Comprehensive Logging**: Everything logged to `oci-sniper.log`
+
+### Control Menu Features (NEW!)
+- 🎮 **Interactive Menu**: Easy-to-use control interface
+- 🖥️ **Foreground Mode**: See live output in terminal
+- 🔄 **Background Mode**: Runs hidden until PC shutdown
+- 📅 **Task Scheduler Mode**: Survives system reboots
+- 📊 **Status Check**: See what's running at a glance
+- 📜 **Live Log Viewer**: Monitor progress in real-time
+- 🛑 **Stop Control**: Safely stop all running instances
+- 🌍 **Bilingual**: Full English and German support
 
 ## 🆕 What's New in v1.2
 
@@ -148,6 +171,35 @@ LANGUAGE = "EN"  # or "DE" for German
 ```
 
 All messages, logs, and prompts in your language!
+
+### **Control Menu (v1.3 - NEW!)**
+
+The interactive control menu makes it easy to manage the sniper script!
+
+**Usage:**
+```powershell
+.\control-menu.ps1
+```
+
+**Features:**
+1. **Foreground Mode** - Run in terminal, see all output live
+2. **Background Job Mode** - Runs hidden in background until PC shutdown
+3. **Task Scheduler Mode** - Survives reboots, starts automatically
+4. **Status Check** - See what's running instantly
+5. **Live Logs** - View logs in real-time (Ctrl+C to exit)
+6. **Stop Script** - Safely stops all running instances
+
+**Language Setting:**
+Edit `control-menu.ps1` to change language:
+```powershell
+$LANGUAGE = "EN"  # or "DE" for German
+```
+
+**Multiple Instances:**
+Yes! You can run multiple instances simultaneously:
+- Multiple background jobs on same PC ✅
+- Multiple PCs running the script ✅
+- Different regions/configurations ✅
 
 ## 📊 Configuration (Optional)
 
