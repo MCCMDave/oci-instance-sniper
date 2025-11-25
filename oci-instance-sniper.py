@@ -48,7 +48,13 @@ from email.mime.text import MIMEText
 # Auto-install dependencies if missing (UX improvement)
 try:
     import oci
-    import tenacity
+    from tenacity import (
+        retry,
+        stop_after_attempt,
+        wait_exponential,
+        retry_if_exception_type,
+        before_sleep_log,
+    )
 except ImportError as e:
     missing_module = str(e).split("'")[1]
     print(f"Missing dependency: {missing_module}")
@@ -62,14 +68,6 @@ except ImportError as e:
         print("ERROR: Could not install dependencies automatically.")
         print("Please run manually: pip install -r requirements.txt")
         sys.exit(1)
-
-from tenacity import (
-    retry,
-    stop_after_attempt,
-    wait_exponential,
-    retry_if_exception_type,
-    before_sleep_log,
-)
 
 # ============================================================================
 # LANGUAGE SELECTION
