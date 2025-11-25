@@ -33,18 +33,18 @@ Changelog v1.1:
 - Added OCID format validation
 """
 
-import oci
-import time
-import logging
-from datetime import datetime
-import sys
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 import json
+import logging
 import os
 import re
+import smtplib
+import sys
+import time
+from datetime import datetime
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
+import oci
 from tenacity import (
     retry,
     stop_after_attempt,

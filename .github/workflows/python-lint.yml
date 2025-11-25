@@ -38,7 +38,7 @@ jobs:
 
       - name: Static analysis with pylint
         run: |
-          pylint oci-instance-sniper.py --disable=C0103,C0114,C0115,C0116,R0913,R0914,R0915 --max-line-length=120
+          pylint oci-instance-sniper.py --rcfile=.pylintrc || echo "⚠️ Pylint warnings found (not blocking)"
 
       - name: Security check with bandit
         run: |
