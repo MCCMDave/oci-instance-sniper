@@ -64,9 +64,7 @@ except ImportError:
 # LANGUAGE SELECTION
 # ============================================================================
 
-# ============================================================================
-# CONFIG FILE SUPPORT (NEW in v1.4)
-# ============================================================================
+
 def load_config_file():
     """Load configuration from sniper-config.json if it exists"""
     config_file = os.path.join(os.path.dirname(__file__), "sniper-config.json")
@@ -85,18 +83,21 @@ def load_config_file():
                         config['ocpus'] = 2
                 # Validate Memory (1-24 GB for Free Tier)
                 if 'memory_in_gbs' in config:
-                    if not isinstance(config['memory_in_gbs'], int) or config['memory_in_gbs'] < 1 or config['memory_in_gbs'] > 24:
-                        print(f"Warning: Invalid Memory value: {config['memory_in_gbs']}. Must be 1-24 GB. Using default: 12")
+                    mem = config['memory_in_gbs']
+                    if not isinstance(mem, int) or mem < 1 or mem > 24:
+                        print(f"Warning: Invalid Memory: {mem}. Must be 1-24 GB. Using default: 12")
                         config['memory_in_gbs'] = 12
                 # Validate retry delay (minimum 10 seconds)
                 if 'retry_delay_seconds' in config:
-                    if not isinstance(config['retry_delay_seconds'], int) or config['retry_delay_seconds'] < 10:
-                        print(f"Warning: Invalid retry delay: {config['retry_delay_seconds']}. Must be >= 10s. Using default: 60")
+                    delay = config['retry_delay_seconds']
+                    if not isinstance(delay, int) or delay < 10:
+                        print(f"Warning: Invalid retry delay: {delay}. Must be >= 10s. Using default: 60")
                         config['retry_delay_seconds'] = 60
                 # Validate max attempts (minimum 1)
                 if 'max_attempts' in config:
-                    if not isinstance(config['max_attempts'], int) or config['max_attempts'] < 1:
-                        print(f"Warning: Invalid max attempts: {config['max_attempts']}. Must be >= 1. Using default: 1440")
+                    attempts = config['max_attempts']
+                    if not isinstance(attempts, int) or attempts < 1:
+                        print(f"Warning: Invalid max attempts: {attempts}. Must be >= 1. Using default: 1440")
                         config['max_attempts'] = 1440
                 return config
         except json.JSONDecodeError as e:
@@ -107,6 +108,7 @@ def load_config_file():
             print(f"Warning: Could not load config file: {e}")
             return {}
     return {}
+
 
 # Load config file (will override hardcoded values below if present)
 CONFIG_FILE = load_config_file()
@@ -271,9 +273,11 @@ TRANSLATIONS = {
     }
 }
 
+
 def t(key):
     """Get translated string"""
     return TRANSLATIONS.get(LANGUAGE, TRANSLATIONS["EN"]).get(key, key)
+
 
 # ============================================================================
 # LOGGING SETUP
@@ -295,9 +299,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
 # ============================================================================
 # HELPER FUNCTIONS
 # ============================================================================
+
 
 def ask_yes_no(question):
     """Ask user a yes/no question"""
