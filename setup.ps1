@@ -18,9 +18,40 @@
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 # ============================================================================
+# LANGUAGE SELECTION
+# ============================================================================
+
+Write-Host ""
+Write-Host "============================================================================" -ForegroundColor Cyan
+Write-Host "      OCI INSTANCE SNIPER - SETUP" -ForegroundColor Cyan
+Write-Host "============================================================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Select Language / Sprache waehlen:" -ForegroundColor Yellow
+Write-Host "  1. English" -ForegroundColor White
+Write-Host "  2. Deutsch" -ForegroundColor White
+Write-Host "  0. Exit / Beenden" -ForegroundColor White
+Write-Host ""
+
+$langChoice = Read-Host "Your choice / Deine Wahl (1/2/0)"
+
+switch ($langChoice) {
+    "1" { $LANGUAGE = "EN" }
+    "2" { $LANGUAGE = "DE" }
+    "0" {
+        Write-Host "Setup cancelled. / Setup abgebrochen." -ForegroundColor Yellow
+        exit 0
+    }
+    default {
+        Write-Host "Invalid choice, using English. / Ungueltige Wahl, verwende English." -ForegroundColor Yellow
+        $LANGUAGE = "EN"
+    }
+}
+
+Clear-Host
+
+# ============================================================================
 # LANGUAGE CONFIGURATION
 # ============================================================================
-$LANGUAGE = "EN"  # Change to "DE" for German
 
 # Language strings
 $strings = @{
@@ -110,7 +141,7 @@ $strings = @{
         monitor_log = "Monitor the log:"
         important = "IMPORTANT: Finding an ARM instance can take hours or days!"
         best_times = "Best success rates: overnight and on weekends"
-        good_luck = "Good luck! 🎯"
+        good_luck = "Good luck!"
         press_close = "Press ENTER to close..."
     }
     DE = @{

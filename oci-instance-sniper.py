@@ -48,7 +48,7 @@ from email.mime.text import MIMEText
 # Auto-install dependencies if missing (UX improvement)
 try:
     import oci
-    from tenacity import retry, stop_after_attempt
+    import tenacity
 except ImportError as e:
     missing_module = str(e).split("'")[1]
     print(f"Missing dependency: {missing_module}")
