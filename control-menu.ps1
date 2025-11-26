@@ -1,4 +1,4 @@
-# OCI Instance Sniper - Control Menu v1.5
+﻿# OCI Instance Sniper - Control Menu v1.5
 # Bilingual PowerShell menu system with configuration management
 # Supports: Foreground, Background Jobs, Task Scheduler, Status, Logs, Configuration
 #
