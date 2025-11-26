@@ -536,33 +536,54 @@ try {
     $scriptContent = $scriptContent -replace 'IMAGE_ID = ".*?"', "IMAGE_ID = `"$IMAGE_ID`""
     $scriptContent = $scriptContent -replace 'SUBNET_ID = ".*?"', "SUBNET_ID = `"$SUBNET_ID`""
 
-    # Update SSH Public Key - Check multiple locations
-    $sshKeyLocations = @(
-        "id_rsa.pub",                           # Script directory (portable)
-        "$env:USERPROFILE\.oci\id_rsa.pub"      # Standard OCI location
-    )
-
+    # Update SSH Public Key - Smart detection
     $sshKeyPath = $null
-    foreach ($location in $sshKeyLocations) {
-        if (Test-Path $location) {
-            $sshKeyPath = $location
-            break
+
+    # 1. Check for any .pub file in script directory (portable setup)
+    $pubFiles = Get-ChildItem -Path "." -Filter "*.pub" -File -ErrorAction SilentlyContinue
+    if ($pubFiles) {
+        $sshKeyPath = $pubFiles[0].FullName
+        Write-Host "  [INFO] Found SSH key: $($pubFiles[0].Name)" -ForegroundColor Cyan
+    }
+
+    # 2. Fallback: Standard OCI location
+    if (-not $sshKeyPath) {
+        $standardPath = "$env:USERPROFILE\.oci\id_rsa.pub"
+        if (Test-Path $standardPath) {
+            $sshKeyPath = $standardPath
+            Write-Host "  [INFO] Found SSH key at standard OCI location" -ForegroundColor Cyan
         }
     }
 
+    # 3. If still not found: Ask user
+    if (-not $sshKeyPath) {
+        Write-Host ""
+        Write-Host "  [INFO] No SSH key found automatically" -ForegroundColor Yellow
+        Write-Host "  Options:" -ForegroundColor Yellow
+        Write-Host "    1. Enter path to your SSH public key (.pub file)" -ForegroundColor White
+        Write-Host "    2. Press ENTER to skip (configure manually later)" -ForegroundColor White
+        Write-Host ""
+        $userKeyPath = Read-Host "  Path to SSH key (or ENTER to skip)"
+
+        if ($userKeyPath -and (Test-Path $userKeyPath)) {
+            $sshKeyPath = $userKeyPath
+        }
+        elseif ($userKeyPath) {
+            Write-Host "  [WARNING] File not found: $userKeyPath" -ForegroundColor Red
+            Write-Host "  Continuing without SSH key configuration..." -ForegroundColor Yellow
+        }
+    }
+
+    # Configure SSH key if found
     if ($sshKeyPath) {
         $sshPublicKey = Get-Content $sshKeyPath -Raw
         $sshPublicKey = $sshPublicKey.Trim()
-        # Escape special regex characters
-        $escapedKey = [regex]::Escape($sshPublicKey)
         $scriptContent = $scriptContent -replace 'SSH_PUBLIC_KEY = """.*?"""', "SSH_PUBLIC_KEY = ```"```"```"$sshPublicKey```"```"```""
         Write-Host "  [OK] SSH Public Key configured from: $sshKeyPath" -ForegroundColor Green
     }
     else {
-        Write-Host "  [WARNING] SSH Key not found in:" -ForegroundColor Yellow
-        Write-Host "    - id_rsa.pub (script directory)" -ForegroundColor Yellow
-        Write-Host "    - $env:USERPROFILE\.oci\id_rsa.pub (OCI standard location)" -ForegroundColor Yellow
-        Write-Host "  Please manually add your SSH public key to the script later" -ForegroundColor Yellow
+        Write-Host "  [WARNING] SSH Key not configured" -ForegroundColor Yellow
+        Write-Host "  You can manually add it to oci-instance-sniper.py later" -ForegroundColor Yellow
     }
 
     # Create backup
