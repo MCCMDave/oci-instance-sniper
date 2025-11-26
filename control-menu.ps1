@@ -138,9 +138,9 @@ $TRANSLATIONS = @{
         config_saved = "Configuration saved successfully!"
 
         # Config prompts
-        prompt_instance_name = "Enter instance name"
-        prompt_ocpus = "Enter OCPUs (1-4 for Free Tier)"
-        prompt_memory = "Enter Memory in GB (1-24 for Free Tier)"
+        prompt_instance_name = "Enter instance name (ENTER to cancel)"
+        prompt_ocpus = "Enter OCPUs 1-4 for Free Tier (ENTER to cancel)"
+        prompt_memory = "Enter Memory in GB 1-24 for Free Tier (ENTER to cancel)"
         prompt_region = "Select Region"
         prompt_interval = "Enter retry interval in seconds (30/60/120 recommended)"
         prompt_image = "Select Image"
@@ -234,9 +234,9 @@ $TRANSLATIONS = @{
         config_saved = "Konfiguration erfolgreich gespeichert!"
 
         # Config prompts
-        prompt_instance_name = "Instanz-Name eingeben"
-        prompt_ocpus = "OCPUs eingeben (1-4 für Free Tier)"
-        prompt_memory = "Arbeitsspeicher in GB eingeben (1-24 für Free Tier)"
+        prompt_instance_name = "Instanz-Name eingeben (ENTER zum Abbrechen)"
+        prompt_ocpus = "OCPUs eingeben 1-4 für Free Tier (ENTER zum Abbrechen)"
+        prompt_memory = "Arbeitsspeicher in GB eingeben 1-24 für Free Tier (ENTER zum Abbrechen)"
         prompt_region = "Region auswählen"
         prompt_interval = "Wiederholungsintervall in Sekunden (30/60/120 empfohlen)"
         prompt_image = "Image auswählen"

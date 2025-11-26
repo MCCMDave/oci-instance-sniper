@@ -533,10 +533,25 @@ try {
     # Read script
     $scriptContent = Get-Content $scriptPath -Raw -Encoding UTF8
 
-    # Update OCIDs
-    $scriptContent = $scriptContent -replace 'COMPARTMENT_ID = "ocid1\.tenancy\.oc1\.\.[a-z0-9]+"', "COMPARTMENT_ID = `"$TENANCY_OCID`""
-    $scriptContent = $scriptContent -replace 'IMAGE_ID = "ocid1\.image\.oc1\.[a-z0-9-]+\.[a-z0-9]+"', "IMAGE_ID = `"$IMAGE_ID`""
-    $scriptContent = $scriptContent -replace 'SUBNET_ID = "ocid1\.subnet\.oc1\.[a-z0-9-]+\.[a-z0-9]+"', "SUBNET_ID = `"$SUBNET_ID`""
+    # Update OCIDs - Match both placeholder and real OCID formats
+    $scriptContent = $scriptContent -replace 'COMPARTMENT_ID = ".*?"', "COMPARTMENT_ID = `"$TENANCY_OCID`""
+    $scriptContent = $scriptContent -replace 'IMAGE_ID = ".*?"', "IMAGE_ID = `"$IMAGE_ID`""
+    $scriptContent = $scriptContent -replace 'SUBNET_ID = ".*?"', "SUBNET_ID = `"$SUBNET_ID`""
+
+    # Update SSH Public Key
+    $sshKeyPath = "$HOME\.oci\id_rsa.pub"
+    if (Test-Path $sshKeyPath) {
+        $sshPublicKey = Get-Content $sshKeyPath -Raw
+        $sshPublicKey = $sshPublicKey.Trim()
+        # Escape special regex characters
+        $escapedKey = [regex]::Escape($sshPublicKey)
+        $scriptContent = $scriptContent -replace 'SSH_PUBLIC_KEY = """.*?"""', "SSH_PUBLIC_KEY = ```"```"```"$sshPublicKey```"```"```""
+        Write-Host "  [OK] SSH Public Key configured" -ForegroundColor Green
+    }
+    else {
+        Write-Host "  [WARNING] SSH Key not found at $sshKeyPath" -ForegroundColor Yellow
+        Write-Host "  Please manually add your SSH public key to the script later" -ForegroundColor Yellow
+    }
 
     # Create backup
     $backupPath = "oci-instance-sniper.py.backup"
