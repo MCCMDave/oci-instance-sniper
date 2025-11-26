@@ -26,7 +26,7 @@ Write-Host "====================================================================
 Write-Host "      OCI INSTANCE SNIPER - SETUP" -ForegroundColor Cyan
 Write-Host "============================================================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "Select Language / Sprache waehlen:" -ForegroundColor Yellow
+Write-Host "Select Language / Sprache nutzen:" -ForegroundColor Yellow
 Write-Host "  1. English" -ForegroundColor White
 Write-Host "  2. Deutsch" -ForegroundColor White
 Write-Host "  0. Exit / Beenden" -ForegroundColor White
@@ -42,7 +42,7 @@ switch ($langChoice) {
         exit 0
     }
     default {
-        Write-Host "Invalid choice, using English. / Ungueltige Wahl, verwende English." -ForegroundColor Yellow
+        Write-Host "Invalid choice, using English. / Falsche Wahl, verwende English." -ForegroundColor Yellow
         $LANGUAGE = "EN"
     }
 }
@@ -152,9 +152,9 @@ $strings = @{
         step3 = "OCI API-Zugangsdaten konfigurieren"
         step4 = "Deine OCIDs automatisch abrufen"
         step5 = "Das Python-Script konfigurieren"
-        continue_prompt = "Drücke ENTER zum Fortfahren oder Strg+C zum Abbrechen..."
+        continue_prompt = "ENTER nutzen zum Fortfahren oder Strg+C zum Abbrechen..."
         quick_mode = "Schnell-Setup-Modus - Aktualisiere OCIDs..."
-        checking_python = "Prüfe Python-Installation..."
+        checking_python = "Teste Python-Installation..."
         python_found = "Python gefunden:"
         python_warning = "Python nicht gefunden"
         installing_python = "Installiere Python..."
@@ -178,15 +178,15 @@ $strings = @{
         config_region = "Region (z.B. eu-frankfurt-1)"
         config_error = "OCI-Konfiguration wurde nicht erstellt"
         config_manual = "Bitte führe 'oci setup config' manuell aus"
-        key_upload_title = "WICHTIG: Lade deinen ÖFFENTLICHEN SCHLÜSSEL in die OCI Console hoch!"
+        key_upload_title = "WICHTIG: Lade deinen PUBLIC KEY in die OCI Console hoch!"
         key_upload_1 = "Gehe zu: https://cloud.oracle.com"
-        key_upload_2 = "Benutzer-Symbol -> Mein Profil -> API Keys -> API Key hinzufügen"
-        key_upload_3 = "Wähle 'Öffentlichen Schlüssel einfügen'"
-        key_upload_4 = "Füge den folgenden Schlüssel ein:"
-        key_begin = "--- ANFANG ÖFFENTLICHER SCHLÜSSEL ---"
-        key_end = "--- ENDE ÖFFENTLICHER SCHLÜSSEL ---"
-        key_copied = "Öffentlicher Schlüssel in Zwischenablage kopiert!"
-        key_prompt = "Drücke ENTER nachdem du den Schlüssel in die OCI Console hochgeladen hast..."
+        key_upload_2 = "Benutzer-Symbol -> Mein Profil -> API Keys -> API Key hinterlegen"
+        key_upload_3 = "Nutze 'Public Key hinterlegen'"
+        key_upload_4 = "Hinterlege den folgenden Key:"
+        key_begin = "--- ANFANG PUBLIC KEY ---"
+        key_end = "--- ENDE PUBLIC KEY ---"
+        key_copied = "Public Key in Zwischenablage kopiert!"
+        key_prompt = "ENTER nutzen nachdem du den Key in die OCI Console hochgeladen hast..."
         credentials_ok = "OCI-Zugangsdaten konfiguriert"
         fetching_ocids = "Rufe OCIDs von deinem OCI-Account ab..."
         tenancy_ok = "Tenancy OCID:"
@@ -196,8 +196,8 @@ $strings = @{
         vcn_create = "Bitte erstelle zuerst ein VCN:"
         vcn_step1 = "Gehe zur OCI Console -> Networking -> Virtual Cloud Networks"
         vcn_step2 = "Klicke 'VCN erstellen'"
-        vcn_step3 = "Nutze den 'VCN Wizard' für schnelles Setup"
-        vcn_rerun = "Führe dann dieses Script erneut aus."
+        vcn_step3 = "Nutze den 'VCN Wizard' mit schnelles Setup"
+        vcn_rerun = "Starte dann dieses Script erneut."
         fetching_subnet = "Rufe Subnet ab..."
         subnet_ok = "Subnet OCID:"
         subnet_error = "Kein Subnet gefunden"
@@ -207,9 +207,9 @@ $strings = @{
         image_warning = "Konnte Ubuntu 24.04 Image nicht automatisch abrufen"
         image_manual = "Bitte gib die Image OCID manuell ein:"
         image_step1 = "Gehe zur OCI Console -> Compute -> Instances -> Instance erstellen"
-        image_step2 = "Ändere Image -> Canonical Ubuntu -> 24.04"
+        image_step2 = "Passe Image an -> Canonical Ubuntu -> 24.04"
         image_step3 = "Kopiere die Image OCID"
-        image_prompt = "Füge Image OCID hier ein"
+        image_prompt = "Hinterlege Image OCID hier"
         image_error = "Keine Image OCID angegeben"
         updating_script = "Aktualisiere Python-Script..."
         script_error = "Python-Script nicht gefunden:"
@@ -218,7 +218,7 @@ $strings = @{
         script_updated = "Python-Script aktualisiert"
         script_update_error = "Fehler beim Aktualisieren des Python-Scripts"
         setup_complete = "SETUP ABGESCHLOSSEN!"
-        config_summary = "Konfigurations-Übersicht:"
+        config_summary = "Konfigurations-Info:"
         compartment = "Compartment:"
         subnet = "Subnet:"
         image = "Image:"
@@ -227,11 +227,11 @@ $strings = @{
         next_steps = "NÄCHSTE SCHRITTE:"
         run_sniper = "Starte das Sniper-Script:"
         run_background = "Oder im Hintergrund starten:"
-        monitor_log = "Log überwachen:"
+        monitor_log = "Log checken:"
         important = "WICHTIG: Eine ARM-Instanz zu finden kann Stunden oder Tage dauern!"
         best_times = "Beste Erfolgsraten: nachts und am Wochenende"
         good_luck = "Viel Erfolg!"
-        press_close = "Drücke ENTER zum Schließen..."
+        press_close = "ENTER nutzen zum Schließen..."
     }
 }
 
