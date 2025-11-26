@@ -47,8 +47,8 @@ switch ($langChoice) {
     "2" { $LANGUAGE = "DE" }
     "0" {
         Write-Host ""
-        Write-Host "Exiting in 5 seconds... / Wird in 5 Sekunden beendet..." -ForegroundColor Yellow
-        for ($i = 5; $i -gt 0; $i--) {
+        Write-Host "Exiting in 3 seconds... / Wird in 3 Sekunden beendet..." -ForegroundColor Yellow
+        for ($i = 3; $i -gt 0; $i--) {
             Write-Host "  $i..." -ForegroundColor Gray
             Start-Sleep -Seconds 1
         }
@@ -546,12 +546,12 @@ try {
         Write-Host "  [INFO] Found SSH key: $($pubFiles[0].Name)" -ForegroundColor Cyan
     }
 
-    # 2. Fallback: Standard OCI location
+    # 2. Fallback: Check for any .pub file in standard OCI location
     if (-not $sshKeyPath) {
-        $standardPath = "$env:USERPROFILE\.oci\id_rsa.pub"
-        if (Test-Path $standardPath) {
-            $sshKeyPath = $standardPath
-            Write-Host "  [INFO] Found SSH key at standard OCI location" -ForegroundColor Cyan
+        $ociPubFiles = Get-ChildItem -Path "$env:USERPROFILE\.oci" -Filter "*.pub" -File -ErrorAction SilentlyContinue
+        if ($ociPubFiles) {
+            $sshKeyPath = $ociPubFiles[0].FullName
+            Write-Host "  [INFO] Found SSH key at OCI location: $($ociPubFiles[0].Name)" -ForegroundColor Cyan
         }
     }
 

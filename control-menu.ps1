@@ -39,8 +39,8 @@ switch ($langChoice) {
     "2" { $LANGUAGE = "DE" }
     "0" {
         Write-Host ""
-        Write-Host "Exiting in 5 seconds... / Wird in 5 Sekunden beendet..." -ForegroundColor Yellow
-        for ($i = 5; $i -gt 0; $i--) {
+        Write-Host "Exiting in 3 seconds... / Wird in 3 Sekunden beendet..." -ForegroundColor Yellow
+        for ($i = 3; $i -gt 0; $i--) {
             Write-Host "  $i..." -ForegroundColor Gray
             Start-Sleep -Seconds 1
         }
@@ -758,8 +758,8 @@ while ($true) {
         "0" {
             Write-MenuLog "Control Menu exited by user"
             Write-Host ""
-            Write-Host "Exiting in 5 seconds... / Wird in 5 Sekunden beendet..." -ForegroundColor Yellow
-            for ($i = 5; $i -gt 0; $i--) {
+            Write-Host "Exiting in 3 seconds... / Wird in 3 Sekunden beendet..." -ForegroundColor Yellow
+            for ($i = 3; $i -gt 0; $i--) {
                 Write-Host "  $i..." -ForegroundColor Gray
                 Start-Sleep -Seconds 1
             }
