@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
     OCI Instance Sniper - Complete Setup Script
@@ -31,19 +31,28 @@ Write-Host "  1. English" -ForegroundColor White
 Write-Host "  2. Deutsch" -ForegroundColor White
 Write-Host "  0. Exit / Beenden" -ForegroundColor White
 Write-Host ""
+Write-Host "Press 1, 2, or 0 / Drücke 1, 2 oder 0" -ForegroundColor Gray
 
-$langChoice = Read-Host "Your choice / Deine Wahl (1/2/0)"
+# Wait for single keypress (no Enter required)
+$langChoice = ""
+while ($langChoice -notin @("1", "2", "0")) {
+    $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    $langChoice = $key.Character
+}
+
+Write-Host "Selected / Gewählt: $langChoice" -ForegroundColor Green
 
 switch ($langChoice) {
     "1" { $LANGUAGE = "EN" }
     "2" { $LANGUAGE = "DE" }
     "0" {
-        Write-Host "Setup cancelled. / Setup abgebrochen." -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "Exiting in 5 seconds... / Wird in 5 Sekunden beendet..." -ForegroundColor Yellow
+        for ($i = 5; $i -gt 0; $i--) {
+            Write-Host "  $i..." -ForegroundColor Gray
+            Start-Sleep -Seconds 1
+        }
         exit 0
-    }
-    default {
-        Write-Host "Invalid choice, using English. / Ungültige Wahl, verwende English." -ForegroundColor Yellow
-        $LANGUAGE = "EN"
     }
 }
 

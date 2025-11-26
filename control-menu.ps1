@@ -23,19 +23,28 @@ Write-Host "  1. English" -ForegroundColor White
 Write-Host "  2. Deutsch" -ForegroundColor White
 Write-Host "  0. Exit / Beenden" -ForegroundColor White
 Write-Host ""
+Write-Host "Press 1, 2, or 0 / Drücke 1, 2 oder 0" -ForegroundColor Gray
 
-$langChoice = Read-Host "Your choice / Deine Wahl (1/2/0)"
+# Wait for single keypress (no Enter required)
+$langChoice = ""
+while ($langChoice -notin @("1", "2", "0")) {
+    $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    $langChoice = $key.Character
+}
+
+Write-Host "Selected / Gewählt: $langChoice" -ForegroundColor Green
 
 switch ($langChoice) {
     "1" { $LANGUAGE = "EN" }
     "2" { $LANGUAGE = "DE" }
     "0" {
-        Write-Host "Cancelled. / Abgebrochen." -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "Exiting in 5 seconds... / Wird in 5 Sekunden beendet..." -ForegroundColor Yellow
+        for ($i = 5; $i -gt 0; $i--) {
+            Write-Host "  $i..." -ForegroundColor Gray
+            Start-Sleep -Seconds 1
+        }
         exit 0
-    }
-    default {
-        Write-Host "Invalid choice, using English. / Ungültige Wahl, verwende English." -ForegroundColor Yellow
-        $LANGUAGE = "EN"
     }
 }
 
@@ -102,7 +111,7 @@ function Ensure-ConfigExists {
 
 $TRANSLATIONS = @{
     EN = @{
-        title = "OCI Instance Sniper - Control Menu v1.4"
+        title = "OCI Instance Sniper - Control Menu"
         menu_1 = "Start Script (Foreground - see live output)"
         menu_2 = "Start Script (Background - runs hidden until PC off)"
         menu_3 = "Start Script (Task Scheduler - survives reboots)"
@@ -198,7 +207,7 @@ $TRANSLATIONS = @{
         press_enter = "Press Enter to continue..."
     }
     DE = @{
-        title = "OCI Instance Sniper - Kontrollmenü v1.4"
+        title = "OCI Instance Sniper - Kontrollmenü"
         menu_1 = "Skript starten (Vordergrund - Live-Ausgabe sichtbar)"
         menu_2 = "Skript starten (Hintergrund - läuft versteckt bis PC aus)"
         menu_3 = "Skript starten (Aufgabenplanung - überlebt Neustarts)"
@@ -376,7 +385,13 @@ function Show-ConfigMenu {
         Write-Host "  0. $(Get-Translation 'config_0')" -ForegroundColor DarkGray
         Write-Host ""
 
-        $choice = Read-Host "$(Get-Translation 'config_prompt')"
+        # Wait for single keypress for config menu navigation (no Enter required)
+        $choice = ""
+        while ($choice -notin @("0", "1", "2", "3", "4", "5", "6", "7")) {
+            $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+            $choice = $key.Character
+        }
+        Write-Host "$choice" -ForegroundColor Green
 
         switch ($choice) {
             "1" {
@@ -721,7 +736,13 @@ Write-MenuLog "Control Menu started (Language: $LANGUAGE)"
 while ($true) {
     Show-Menu
 
-    $choice = Read-Host "$(Get-Translation 'prompt')"
+    # Wait for single keypress for menu navigation (no Enter required)
+    $choice = ""
+    while ($choice -notin @("0", "1", "2", "3", "4", "5", "6", "7")) {
+        $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        $choice = $key.Character
+    }
+    Write-Host "$choice" -ForegroundColor Green
 
     switch ($choice) {
         "1" { Start-Foreground }
@@ -736,6 +757,12 @@ while ($true) {
         }
         "0" {
             Write-MenuLog "Control Menu exited by user"
+            Write-Host ""
+            Write-Host "Exiting in 5 seconds... / Wird in 5 Sekunden beendet..." -ForegroundColor Yellow
+            for ($i = 5; $i -gt 0; $i--) {
+                Write-Host "  $i..." -ForegroundColor Gray
+                Start-Sleep -Seconds 1
+            }
             Clear-Host
             exit
         }
