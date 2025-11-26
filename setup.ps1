@@ -536,18 +536,32 @@ try {
     $scriptContent = $scriptContent -replace 'IMAGE_ID = ".*?"', "IMAGE_ID = `"$IMAGE_ID`""
     $scriptContent = $scriptContent -replace 'SUBNET_ID = ".*?"', "SUBNET_ID = `"$SUBNET_ID`""
 
-    # Update SSH Public Key
-    $sshKeyPath = "$env:USERPROFILE\.oci\id_rsa.pub"
-    if (Test-Path $sshKeyPath) {
+    # Update SSH Public Key - Check multiple locations
+    $sshKeyLocations = @(
+        "id_rsa.pub",                           # Script directory (portable)
+        "$env:USERPROFILE\.oci\id_rsa.pub"      # Standard OCI location
+    )
+
+    $sshKeyPath = $null
+    foreach ($location in $sshKeyLocations) {
+        if (Test-Path $location) {
+            $sshKeyPath = $location
+            break
+        }
+    }
+
+    if ($sshKeyPath) {
         $sshPublicKey = Get-Content $sshKeyPath -Raw
         $sshPublicKey = $sshPublicKey.Trim()
         # Escape special regex characters
         $escapedKey = [regex]::Escape($sshPublicKey)
         $scriptContent = $scriptContent -replace 'SSH_PUBLIC_KEY = """.*?"""', "SSH_PUBLIC_KEY = ```"```"```"$sshPublicKey```"```"```""
-        Write-Host "  [OK] SSH Public Key configured" -ForegroundColor Green
+        Write-Host "  [OK] SSH Public Key configured from: $sshKeyPath" -ForegroundColor Green
     }
     else {
-        Write-Host "  [WARNING] SSH Key not found at $sshKeyPath" -ForegroundColor Yellow
+        Write-Host "  [WARNING] SSH Key not found in:" -ForegroundColor Yellow
+        Write-Host "    - id_rsa.pub (script directory)" -ForegroundColor Yellow
+        Write-Host "    - $env:USERPROFILE\.oci\id_rsa.pub (OCI standard location)" -ForegroundColor Yellow
         Write-Host "  Please manually add your SSH public key to the script later" -ForegroundColor Yellow
     }
 
