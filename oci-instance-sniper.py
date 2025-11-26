@@ -187,7 +187,7 @@ SMTP_PORT = 587
 # ============================================================================
 TRANSLATIONS = {
     "EN": {
-        "title": "OCI Instance Sniper v1.2 - Starting",
+        "title": "OCI Instance Sniper - Starting",
         "target_shape": "Target Shape",
         "target_config": "Target Config",
         "availability_domains": "Availability Domains",
@@ -232,9 +232,12 @@ TRANSLATIONS = {
         "reserved_ip_created": "Reserved IP created",
         "bad_request": "Bad Request - Check your configuration (Shape, Image, Subnet)",
         "auth_failed": "Authentication failed - Run: oci setup config",
+        "config_errors_found": "❌ Configuration errors found:",
+        "please_run_setup": "Please run setup.ps1 first or manually configure the script:",
+        "setup_command": "   powershell -ExecutionPolicy Bypass -File setup.ps1",
     },
     "DE": {
-        "title": "OCI Instance Sniper v1.2 - Startet",
+        "title": "OCI Instance Sniper - Startet",
         "target_shape": "Ziel-Shape",
         "target_config": "Ziel-Konfiguration",
         "availability_domains": "Availability Domains",
@@ -279,6 +282,9 @@ TRANSLATIONS = {
         "reserved_ip_created": "Reservierte IP erstellt",
         "bad_request": "Ungültige Anfrage - Prüfen Sie Ihre Konfiguration (Shape, Image, Subnet)",
         "auth_failed": "Authentifizierung fehlgeschlagen - Führen Sie aus: oci setup config",
+        "config_errors_found": "❌ Konfigurationsfehler gefunden:",
+        "please_run_setup": "Bitte führen Sie zuerst setup.ps1 aus oder konfigurieren Sie das Script manuell:",
+        "setup_command": "   powershell -ExecutionPolicy Bypass -File setup.ps1",
     },
 }
 
@@ -360,7 +366,7 @@ Next Steps:
 4. Deploy Nextcloud!
 
 ---
-Sent by OCI Instance Sniper v1.2
+Sent by OCI Instance Sniper
         """
 
         msg.attach(MIMEText(text, "plain"))
@@ -605,12 +611,12 @@ def validate_configuration():
         errors.append("SUBNET_ID has invalid format (must start with 'ocid1.subnet')")
 
     if errors:
-        logger.error("❌ Configuration errors found:")
+        logger.error(t("config_errors_found"))
         for error in errors:
             logger.error(f"   - {error}")
         logger.error("")
-        logger.error("Please run setup.ps1 first or manually configure the script:")
-        logger.error("   powershell -ExecutionPolicy Bypass -File setup.ps1")
+        logger.error(t("please_run_setup"))
+        logger.error(t("setup_command"))
         return False
 
     return True

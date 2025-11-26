@@ -145,8 +145,7 @@ $strings = @{
         ssh_key = "SSH Key:"
         configured = "Configured [OK]"
         next_steps = "NEXT STEPS:"
-        run_sniper = "Run the sniper script:"
-        run_background = "Or run in background:"
+        run_sniper = "Start the Control Menu:"
         monitor_log = "Monitor the log:"
         important = "IMPORTANT: Finding an ARM instance can take hours or days!"
         best_times = "Best success rates: overnight and on weekends"
@@ -234,8 +233,7 @@ $strings = @{
         ssh_key = "SSH Key:"
         configured = "Konfiguriert [OK]"
         next_steps = "NÄCHSTE SCHRITTE:"
-        run_sniper = "Starte das Sniper-Script:"
-        run_background = "Oder im Hintergrund starten:"
+        run_sniper = "Starte das Kontrollmenü:"
         monitor_log = "Log überwachen:"
         important = "WICHTIG: Eine ARM-Instanz zu finden kann Stunden oder Tage dauern!"
         best_times = "Beste Erfolgsraten: nachts und am Wochenende"
@@ -539,7 +537,7 @@ try {
     $scriptContent = $scriptContent -replace 'SUBNET_ID = ".*?"', "SUBNET_ID = `"$SUBNET_ID`""
 
     # Update SSH Public Key
-    $sshKeyPath = "$HOME\.oci\id_rsa.pub"
+    $sshKeyPath = "$env:USERPROFILE\.oci\id_rsa.pub"
     if (Test-Path $sshKeyPath) {
         $sshPublicKey = Get-Content $sshKeyPath -Raw
         $sshPublicKey = $sshPublicKey.Trim()
@@ -588,10 +586,7 @@ Write-Host "$($s.next_steps)" -ForegroundColor Yellow
 Write-Host "============================================================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "$($s.run_sniper)" -ForegroundColor Yellow
-Write-Host "  python oci-instance-sniper.py" -ForegroundColor White
-Write-Host ""
-Write-Host "$($s.run_background)" -ForegroundColor Yellow
-Write-Host "  Start-Process powershell -ArgumentList `"-NoExit`", `"-Command`", `"python oci-instance-sniper.py`"" -ForegroundColor White
+Write-Host "  .\control-menu.ps1" -ForegroundColor White
 Write-Host ""
 Write-Host "$($s.monitor_log)" -ForegroundColor Yellow
 Write-Host "  Get-Content -Path oci-sniper.log -Wait -Tail 20" -ForegroundColor White
