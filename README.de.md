@@ -67,6 +67,24 @@ Keine manuelle Konfiguration nötig!
 - 🛑 **Stopp-Kontrolle**: Stoppt alle laufenden Instanzen sicher
 - 🌍 **Zweisprachig**: Volle Unterstützung für Deutsch und Englisch
 
+## 🆕 Neu in v1.3
+
+### **Netzwerk-Resilience (NEU!)**
+- ✅ **Automatische Retry-Logik**: Netzwerk-Fehler werden automatisch wiederholt (3 Versuche mit exponentiellem Backoff)
+- ✅ **Robuster Betrieb**: Handhabt temporaere Verbindungsprobleme, Timeouts und API-Verlangsamungen
+- ✅ **Intelligentes Backoff**: Wartet 2s → 4s → 8s zwischen Wiederholungen um API nicht zu ueberlasten
+
+### **Code-Qualitaet & CI/CD (NEU!)**
+- ✅ **GitHub Actions**: Automatisches Linting und Testing bei jedem Commit
+- ✅ **Pre-commit Hooks**: Code wird lokal vor Commits validiert
+- ✅ **Verbesserte Validierung**: SSH Keys, Config-Werte und JSON werden validiert
+
+### **Bug Fixes**
+- ✅ Import-Reihenfolge-Problem behoben das zu Abstuerzen fuehren konnte
+- ✅ Verbesserte Config-Datei-Fehlerbehandlung mit Fallback auf Standardwerte
+- ✅ Bessere SSH Key-Validierung mit Regex-Patterns
+- ✅ Dependency-Versionen fixiert fuer Stabilitaet
+
 ## 🆕 Neu in v1.2
 
 ### **Instanz-Status-Überwachung**
@@ -172,7 +190,7 @@ LANGUAGE = "DE"  # oder "EN" für Englisch
 
 Alle Meldungen, Logs und Prompts in deiner Sprache!
 
-### **Kontrollmenü (v1.3 - NEU!)**
+### **Kontrollmenü (v1.4 - NEU!)**
 
 Das interaktive Kontrollmenü macht die Verwaltung des Sniper-Skripts einfach!
 
