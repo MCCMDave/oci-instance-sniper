@@ -81,6 +81,11 @@ function Load-Config {
 
 function Save-Config {
     param($config)
+    # Ensure config directory exists
+    $configDir = Split-Path $CONFIG_FILE -Parent
+    if (-not (Test-Path $configDir)) {
+        New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+    }
     $json = $config | ConvertTo-Json -Depth 10
     # Write UTF-8 without BOM (PowerShell 5.1 compatible)
     [System.IO.File]::WriteAllLines($CONFIG_FILE, $json)
@@ -514,7 +519,9 @@ function Show-ConfigMenu {
                 if ($langChoice -in @("1","2")) {
                     Save-Config $config
                     Write-Host "$(Get-Translation 'config_saved')" -ForegroundColor Green
-                    Start-Sleep -Seconds 1
+                    Write-Host ""
+                    Write-Host "$(Get-Translation 'press_enter')" -ForegroundColor DarkGray
+                    Read-Host
                 }
             }
             "0" { return }
