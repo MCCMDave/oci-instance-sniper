@@ -9,10 +9,10 @@ Erstellt automatisch ARM-Instanzen (VM.Standard.A1.Flex) in Oracle Cloud Infrast
 ### Option 1: Interaktives Kontrollmenü (Empfohlen)
 ```powershell
 # 1. Setup (einmalig)
-.\setup.ps1
+.\scripts\setup.ps1
 
 # 2. Kontrollmenü starten
-.\control-menu.ps1
+.\scripts\control-menu.ps1
 ```
 
 Das Menü ermöglicht:
@@ -196,7 +196,7 @@ Das interaktive Kontrollmenü macht die Verwaltung des Sniper-Skripts einfach!
 
 **Verwendung:**
 ```powershell
-.\control-menu.ps1
+.\scripts\control-menu.ps1
 ```
 
 **Features:**
@@ -218,7 +218,7 @@ Das interaktive Kontrollmenü macht die Verwaltung des Sniper-Skripts einfach!
 6. **Skript stoppen** - Stoppt alle laufenden Instanzen sicher
 
 **Spracheinstellung:**
-Bearbeite `control-menu.ps1` um die Sprache zu ändern:
+Bearbeite `scripts/control-menu.ps1` um die Sprache zu ändern:
 ```powershell
 $LANGUAGE = "DE"  # oder "EN" für Englisch
 ```
@@ -311,7 +311,7 @@ Nächste Schritte:
 ### **Konfigurationsfehler beim Start?**
 ```powershell
 # Setup-Skript ausführen um OCIDs automatisch zu konfigurieren
-.\setup.ps1
+.\scripts\setup.ps1
 ```
 
 ### **OCI CLI nach Setup nicht gefunden?**

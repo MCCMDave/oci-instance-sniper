@@ -144,6 +144,17 @@ $strings = @{
         image = "Image:"
         ssh_key = "SSH Key:"
         configured = "Configured [OK]"
+        not_configured = "Not configured [WARN]"
+        ssh_not_found = "No SSH key found automatically"
+        ssh_options = "Options:"
+        ssh_enter_path = "Enter path to your SSH public key (.pub file)"
+        ssh_press_enter = "Press ENTER to skip (configure manually later)"
+        ssh_prompt = "Path to SSH key (or ENTER to skip)"
+        ssh_file_not_found = "File not found:"
+        ssh_continuing = "Continuing without SSH key configuration..."
+        ssh_configured_from = "SSH Public Key configured from:"
+        ssh_warning_not_configured = "SSH Key not configured"
+        ssh_manual_later = "You can manually add it to oci-instance-sniper.py later"
         next_steps = "NEXT STEPS:"
         run_sniper = "Start the Control Menu:"
         monitor_log = "Monitor the log:"
@@ -232,6 +243,17 @@ $strings = @{
         image = "Image:"
         ssh_key = "SSH Key:"
         configured = "Konfiguriert [OK]"
+        not_configured = "Nicht konfiguriert [WARNUNG]"
+        ssh_not_found = "Kein SSH-Key automatisch gefunden"
+        ssh_options = "Optionen:"
+        ssh_enter_path = "Pfad zum SSH Public Key eingeben (.pub Datei)"
+        ssh_press_enter = "ENTER drücken zum Überspringen (später manuell konfigurieren)"
+        ssh_prompt = "Pfad zum SSH-Key (oder ENTER zum Überspringen)"
+        ssh_file_not_found = "Datei nicht gefunden:"
+        ssh_continuing = "Fahre fort ohne SSH-Key-Konfiguration..."
+        ssh_configured_from = "SSH Public Key konfiguriert von:"
+        ssh_warning_not_configured = "SSH Key nicht konfiguriert"
+        ssh_manual_later = "Du kannst ihn später manuell zu oci-instance-sniper.py hinzufügen"
         next_steps = "NÄCHSTE SCHRITTE:"
         run_sniper = "Starte das Kontrollmenü:"
         monitor_log = "Log überwachen:"
@@ -253,6 +275,7 @@ Write-Host ""
 # Detect if this is first-time setup
 $isFirstRun = $false
 $configPath = "$env:USERPROFILE\.oci\config"
+$sshKeyConfigured = $false
 
 try {
     $pythonVersion = python --version 2>&1
@@ -519,7 +542,9 @@ catch {
 
 Write-Host "`n[5/5] $($s.updating_script)" -ForegroundColor Cyan
 
-$scriptPath = "oci-instance-sniper.py"
+# Get parent directory (project root)
+$projectRoot = Split-Path -Parent $PSScriptRoot
+$scriptPath = Join-Path $projectRoot "oci-instance-sniper.py"
 
 if (-not (Test-Path $scriptPath)) {
     Write-Host "  [ERROR] $($s.script_error) $scriptPath" -ForegroundColor Red
@@ -539,8 +564,8 @@ try {
     # Update SSH Public Key - Smart detection
     $sshKeyPath = $null
 
-    # 1. Check for any .pub file in script directory (portable setup)
-    $pubFiles = Get-ChildItem -Path "." -Filter "*.pub" -File -ErrorAction SilentlyContinue
+    # 1. Check for any .pub file in project root directory (portable setup)
+    $pubFiles = Get-ChildItem -Path $projectRoot -Filter "*.pub" -File -ErrorAction SilentlyContinue
     if ($pubFiles) {
         $sshKeyPath = $pubFiles[0].FullName
         Write-Host "  [INFO] Found SSH key: $($pubFiles[0].Name)" -ForegroundColor Cyan
@@ -558,19 +583,19 @@ try {
     # 3. If still not found: Ask user
     if (-not $sshKeyPath) {
         Write-Host ""
-        Write-Host "  [INFO] No SSH key found automatically" -ForegroundColor Yellow
-        Write-Host "  Options:" -ForegroundColor Yellow
-        Write-Host "    1. Enter path to your SSH public key (.pub file)" -ForegroundColor White
-        Write-Host "    2. Press ENTER to skip (configure manually later)" -ForegroundColor White
+        Write-Host "  [INFO] $($s.ssh_not_found)" -ForegroundColor Yellow
+        Write-Host "  $($s.ssh_options)" -ForegroundColor Yellow
+        Write-Host "    1. $($s.ssh_enter_path)" -ForegroundColor White
+        Write-Host "    2. $($s.ssh_press_enter)" -ForegroundColor White
         Write-Host ""
-        $userKeyPath = Read-Host "  Path to SSH key (or ENTER to skip)"
+        $userKeyPath = Read-Host "  $($s.ssh_prompt)"
 
         if ($userKeyPath -and (Test-Path $userKeyPath)) {
             $sshKeyPath = $userKeyPath
         }
         elseif ($userKeyPath) {
-            Write-Host "  [WARNING] File not found: $userKeyPath" -ForegroundColor Red
-            Write-Host "  Continuing without SSH key configuration..." -ForegroundColor Yellow
+            Write-Host "  [WARNING] $($s.ssh_file_not_found) $userKeyPath" -ForegroundColor Red
+            Write-Host "  $($s.ssh_continuing)" -ForegroundColor Yellow
         }
     }
 
@@ -579,11 +604,13 @@ try {
         $sshPublicKey = Get-Content $sshKeyPath -Raw
         $sshPublicKey = $sshPublicKey.Trim()
         $scriptContent = $scriptContent -replace 'SSH_PUBLIC_KEY = """.*?"""', "SSH_PUBLIC_KEY = ```"```"```"$sshPublicKey```"```"```""
-        Write-Host "  [OK] SSH Public Key configured from: $sshKeyPath" -ForegroundColor Green
+        Write-Host "  [OK] $($s.ssh_configured_from) $sshKeyPath" -ForegroundColor Green
+        $sshKeyConfigured = $true
     }
     else {
-        Write-Host "  [WARNING] SSH Key not configured" -ForegroundColor Yellow
-        Write-Host "  You can manually add it to oci-instance-sniper.py later" -ForegroundColor Yellow
+        Write-Host "  [WARNING] $($s.ssh_warning_not_configured)" -ForegroundColor Yellow
+        Write-Host "  $($s.ssh_manual_later)" -ForegroundColor Yellow
+        $sshKeyConfigured = $false
     }
 
     # Create backup
@@ -614,14 +641,18 @@ Write-Host "$($s.config_summary)" -ForegroundColor Yellow
 Write-Host "  $($s.compartment) $TENANCY_OCID" -ForegroundColor White
 Write-Host "  $($s.subnet)      $SUBNET_ID" -ForegroundColor White
 Write-Host "  $($s.image)       $IMAGE_ID" -ForegroundColor White
-Write-Host "  $($s.ssh_key)     $($s.configured)" -ForegroundColor Green
+if ($sshKeyConfigured) {
+    Write-Host "  $($s.ssh_key)     $($s.configured)" -ForegroundColor Green
+} else {
+    Write-Host "  $($s.ssh_key)     $($s.not_configured)" -ForegroundColor Yellow
+}
 Write-Host ""
 Write-Host "============================================================================" -ForegroundColor Cyan
 Write-Host "$($s.next_steps)" -ForegroundColor Yellow
 Write-Host "============================================================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "$($s.run_sniper)" -ForegroundColor Yellow
-Write-Host "  .\control-menu.ps1" -ForegroundColor White
+Write-Host "  .\scripts\control-menu.ps1" -ForegroundColor White
 Write-Host ""
 Write-Host "$($s.monitor_log)" -ForegroundColor Yellow
 Write-Host "  Get-Content -Path oci-sniper.log -Wait -Tail 20" -ForegroundColor White

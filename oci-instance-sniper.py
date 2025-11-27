@@ -75,8 +75,8 @@ except ImportError as e:
 
 
 def load_config_file():
-    """Load configuration from sniper-config.json if it exists"""
-    config_file = os.path.join(os.path.dirname(__file__), "sniper-config.json")
+    """Load configuration from config/sniper-config.json if it exists"""
+    config_file = os.path.join(os.path.dirname(__file__), "config", "sniper-config.json")
     if os.path.exists(config_file):
         try:
             with open(config_file, "r", encoding="utf-8") as f:
@@ -111,7 +111,7 @@ def load_config_file():
                 return config
         except json.JSONDecodeError as e:
             print(f"Error: Config file is corrupted (invalid JSON): {e}")
-            print("Using default configuration. Please check sniper-config.json")
+            print("Using default configuration. Please check config/sniper-config.json")
             return {}
         except Exception as e:
             print(f"Warning: Could not load config file: {e}")
