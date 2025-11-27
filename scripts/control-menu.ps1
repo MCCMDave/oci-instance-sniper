@@ -57,7 +57,8 @@ Clear-Host
 # Script Configuration
 $SCRIPT_NAME = "oci-instance-sniper.py"
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$SCRIPT_PATH = Join-Path $projectRoot $SCRIPT_NAME
+# Always look for the Python script in the same directory as control-menu.ps1
+$SCRIPT_PATH = Join-Path $PSScriptRoot $SCRIPT_NAME
 $LOG_FILE = Join-Path $projectRoot "oci-sniper.log"
 $CONFIG_FILE = Join-Path $projectRoot "config" "sniper-config.json"
 $MENU_LOG_FILE = Join-Path $projectRoot "control-menu.log"
