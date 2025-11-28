@@ -384,13 +384,9 @@ function Show-ConfigMenu {
         Write-Host "================================================================" -ForegroundColor White
         Write-Host ""
         Write-Host "  $(Get-Translation 'config_current'):" -ForegroundColor Cyan
-        Write-Host "  - Instance Name: $($config.instance_name)" -ForegroundColor Gray
-        Write-Host "  - CPUs: $($config.ocpus)" -ForegroundColor Gray
-        Write-Host "  - Memory: $($config.memory_in_gbs) GB" -ForegroundColor Gray
-        Write-Host "  - Region: $($config.region)" -ForegroundColor Gray
-        Write-Host "  - Retry Interval: $($config.retry_delay_seconds)s" -ForegroundColor Gray
-        Write-Host "  - Image: $($config.image)" -ForegroundColor Gray
-        Write-Host "  - Language: $($config.language)" -ForegroundColor Gray
+        Write-Host "  - Instance: $($config.instance_name) | CPUs: $($config.ocpus) | Memory: $($config.memory_in_gbs)GB" -ForegroundColor Gray
+        Write-Host "  - Region: $($config.region) | Interval: $($config.retry_delay_seconds)s" -ForegroundColor Gray
+        Write-Host "  - Image: $($config.image) | Language: $($config.language)" -ForegroundColor Gray
         Write-Host ""
         Write-Host "  1. $(Get-Translation 'config_1')" -ForegroundColor Green
         Write-Host "  2. $(Get-Translation 'config_2')" -ForegroundColor Green
