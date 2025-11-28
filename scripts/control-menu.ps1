@@ -1,6 +1,12 @@
-﻿# OCI Instance Sniper - Control Menu v1.5
+﻿# OCI Instance Sniper - Control Menu v1.6
 # Bilingual PowerShell menu system with configuration management
 # Supports: Foreground, Background Jobs, Task Scheduler, Status, Logs, Configuration
+#
+# Changelog v1.6:
+# - Consolidated 3 start options into 1 submenu (better UX)
+# - Start submenu: Foreground / Background / Task Scheduler
+# - Main menu now shows all options (Config reset now visible)
+# - Improved menu structure and navigation
 #
 # Changelog v1.5:
 # - Added comprehensive logging to control-menu.log
@@ -120,16 +126,22 @@ function Ensure-ConfigExists {
 $TRANSLATIONS = @{
     EN = @{
         title = "OCI Instance Sniper - Control Menu"
-        menu_1 = "Start Script (Foreground - see live output)"
-        menu_2 = "Start Script (Background - runs hidden until PC off)"
-        menu_3 = "Start Script (Task Scheduler - survives reboots)"
-        menu_4 = "Check Status"
-        menu_5 = "View Live Logs"
-        menu_6 = "Stop Script"
-        menu_7 = "Configuration"
+        menu_1 = "Start Script"
+        menu_2 = "Check Status"
+        menu_3 = "View Live Logs"
+        menu_4 = "Stop Script"
+        menu_5 = "Configuration"
         menu_0 = "Exit"
-        prompt = "Enter choice (1-7, 0=Exit)"
-        invalid = "Invalid choice! Please enter 1-7 or 0."
+        prompt = "Enter choice (1-5, 0=Exit)"
+        invalid = "Invalid choice! Please enter 1-5 or 0."
+
+        # Start submenu
+        start_title = "Start Script - Select Mode"
+        start_1 = "Foreground (see live output)"
+        start_2 = "Background (runs hidden until PC off)"
+        start_3 = "Task Scheduler (survives reboots)"
+        start_0 = "Back to Main Menu"
+        start_prompt = "Enter choice (1-3, 0=Back)"
 
         # Configuration menu
         config_title = "Configuration Menu"
@@ -221,16 +233,22 @@ $TRANSLATIONS = @{
     }
     DE = @{
         title = "OCI Instance Sniper - Kontrollmenü"
-        menu_1 = "Skript starten (Vordergrund - Live-Ausgabe sichtbar)"
-        menu_2 = "Skript starten (Hintergrund - läuft versteckt bis PC aus)"
-        menu_3 = "Skript starten (Aufgabenplanung - überlebt Neustarts)"
-        menu_4 = "Status prüfen"
-        menu_5 = "Live-Logs anzeigen"
-        menu_6 = "Skript stoppen"
-        menu_7 = "Konfiguration"
+        menu_1 = "Skript starten"
+        menu_2 = "Status prüfen"
+        menu_3 = "Live-Logs anzeigen"
+        menu_4 = "Skript stoppen"
+        menu_5 = "Konfiguration"
         menu_0 = "Beenden"
-        prompt = "Wähle Option (1-7, 0=Beenden)"
-        invalid = "Ungültige Auswahl! Bitte 1-7 oder 0 eingeben."
+        prompt = "Wähle Option (1-5, 0=Beenden)"
+        invalid = "Ungültige Auswahl! Bitte 1-5 oder 0 eingeben."
+
+        # Start submenu
+        start_title = "Skript starten - Modus wählen"
+        start_1 = "Vordergrund (Live-Ausgabe sichtbar)"
+        start_2 = "Hintergrund (läuft versteckt bis PC aus)"
+        start_3 = "Aufgabenplanung (überlebt Neustarts)"
+        start_0 = "Zurück zum Hauptmenü"
+        start_prompt = "Wahl eingeben (1-3, 0=Zurück)"
 
         # Configuration menu
         config_title = "Konfigurationsmenü"
@@ -348,15 +366,53 @@ function Show-Menu {
     Write-Host "================================================================" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "  1. $(Get-Translation 'menu_1')" -ForegroundColor Green
-    Write-Host "  2. $(Get-Translation 'menu_2')" -ForegroundColor Yellow
-    Write-Host "  3. $(Get-Translation 'menu_3')" -ForegroundColor Magenta
-    Write-Host "  4. $(Get-Translation 'menu_4')" -ForegroundColor Cyan
-    Write-Host "  5. $(Get-Translation 'menu_5')" -ForegroundColor Blue
-    Write-Host "  6. $(Get-Translation 'menu_6')" -ForegroundColor Red
-    Write-Host "  7. $(Get-Translation 'menu_7')" -ForegroundColor White
+    Write-Host "  2. $(Get-Translation 'menu_2')" -ForegroundColor Cyan
+    Write-Host "  3. $(Get-Translation 'menu_3')" -ForegroundColor Blue
+    Write-Host "  4. $(Get-Translation 'menu_4')" -ForegroundColor Red
+    Write-Host "  5. $(Get-Translation 'menu_5')" -ForegroundColor White
     Write-Host ""
     Write-Host "  0. $(Get-Translation 'menu_0')" -ForegroundColor DarkGray
     Write-Host ""
+}
+
+function Show-StartMenu {
+    Clear-Host
+    Write-Host "================================================================" -ForegroundColor Green
+    Write-Host "  $(Get-Translation 'start_title')" -ForegroundColor Green
+    Write-Host "================================================================" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "  1. $(Get-Translation 'start_1')" -ForegroundColor Green
+    Write-Host "  2. $(Get-Translation 'start_2')" -ForegroundColor Yellow
+    Write-Host "  3. $(Get-Translation 'start_3')" -ForegroundColor Magenta
+    Write-Host ""
+    Write-Host "  0. $(Get-Translation 'start_0')" -ForegroundColor DarkGray
+    Write-Host ""
+}
+
+function Show-StartSubmenu {
+    while ($true) {
+        Show-StartMenu
+
+        # Wait for single keypress (no Enter required)
+        $choice = ""
+        while ($choice -notin @("0", "1", "2", "3")) {
+            $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+            $choice = $key.Character
+        }
+        Write-Host "$choice" -ForegroundColor Green
+
+        switch ($choice) {
+            "1" { Start-Foreground; return }
+            "2" { Start-BackgroundJob; return }
+            "3" { Start-TaskScheduler; return }
+            "0" { return }
+            default {
+                Write-Host ""
+                Write-Host "$(Get-Translation 'invalid')" -ForegroundColor Red
+                Start-Sleep -Seconds 2
+            }
+        }
+    }
 }
 
 function Check-ScriptExists {
@@ -783,20 +839,21 @@ while ($true) {
 
     # Wait for single keypress for menu navigation (no Enter required)
     $choice = ""
-    while ($choice -notin @("0", "1", "2", "3", "4", "5", "6", "7")) {
+    while ($choice -notin @("0", "1", "2", "3", "4", "5")) {
         $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
         $choice = $key.Character
     }
     Write-Host "$choice" -ForegroundColor Green
 
     switch ($choice) {
-        "1" { Start-Foreground }
-        "2" { Start-BackgroundJob }
-        "3" { Start-TaskScheduler }
-        "4" { Show-Status }
-        "5" { Show-LiveLogs }
-        "6" { Stop-Script }
-        "7" {
+        "1" {
+            Write-MenuLog "Start submenu accessed"
+            Show-StartSubmenu
+        }
+        "2" { Show-Status }
+        "3" { Show-LiveLogs }
+        "4" { Stop-Script }
+        "5" {
             Write-MenuLog "Configuration menu accessed"
             Show-ConfigMenu
         }
