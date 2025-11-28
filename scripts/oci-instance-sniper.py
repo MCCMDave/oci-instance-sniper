@@ -652,12 +652,12 @@ def main():
     except Exception as e:
         logger.error(f"❌ {t('oci_init_failed')}: {str(e)}")
         if LANGUAGE == "DE":
-            logger.error("\n" + "="*70)
+            logger.error("\n" + "=" * 70)
             logger.error("📋 Du benötigst folgende Informationen:")
             logger.error("   - User OCID (cloud.oracle.com → Benutzer-Symbol → Mein Profil)")
             logger.error("   - Tenancy OCID (Benutzer-Symbol → Tenancy: [Name])")
             logger.error("   - Region (z.B. eu-frankfurt-1)")
-            logger.error("="*70)
+            logger.error("=" * 70)
             logger.error("\n🔧 Führe aus: oci setup config")
             logger.error("\nHinweis: Die folgenden Eingabeaufforderungen sind auf Englisch")
             logger.error("(vom OCI SDK). Nutze die Informationen oben.\n")
