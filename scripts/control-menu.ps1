@@ -60,8 +60,9 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 # Always look for the Python script in the same directory as control-menu.ps1
 $SCRIPT_PATH = Join-Path $PSScriptRoot $SCRIPT_NAME
 $LOG_FILE = Join-Path $projectRoot "oci-sniper.log"
-$CONFIG_FILE = Join-Path $projectRoot "config" "sniper-config.json"
-$MENU_LOG_FILE = Join-Path $projectRoot "control-menu.log"
+# Config and logs now in scripts/ directory (same as control-menu.ps1)
+$CONFIG_FILE = Join-Path $PSScriptRoot "config" "sniper-config.json"
+$MENU_LOG_FILE = Join-Path $PSScriptRoot "control-menu.log"
 $JOB_NAME = "OCI-Instance-Sniper-Job"
 $TASK_NAME = "OCI-Instance-Sniper-Task"
 
@@ -140,9 +141,13 @@ $TRANSLATIONS = @{
         config_5 = "Retry Interval (seconds)"
         config_6 = "Image Type"
         config_7 = "Language"
+        config_8 = "Reset OCIDs (reconfigure credentials)"
         config_0 = "Back to Main Menu"
         config_prompt = "Enter option to change (0=Back)"
         config_saved = "Configuration saved successfully!"
+        ocid_reset_confirm = "Are you sure you want to reset OCIDs? This will delete ~/.oci/config (Y/N)"
+        ocid_reset_success = "OCIDs reset! Please run the Python script to reconfigure."
+        ocid_reset_cancelled = "Reset cancelled."
 
         # Config prompts
         prompt_instance_name = "Enter instance name (ENTER to cancel)"
@@ -212,6 +217,7 @@ $TRANSLATIONS = @{
         job_notfound = "No background job found."
 
         press_enter = "Press Enter to continue..."
+        exiting = "Exiting in 3 seconds..."
     }
     DE = @{
         title = "OCI Instance Sniper - Kontrollmenü"
@@ -236,9 +242,13 @@ $TRANSLATIONS = @{
         config_5 = "Wiederholungsintervall (Sekunden)"
         config_6 = "Image-Typ"
         config_7 = "Sprache"
+        config_8 = "OCIDs zurücksetzen (Zugangsdaten neu eingeben)"
         config_0 = "Zurück zum Hauptmenü"
         config_prompt = "Option zum Ändern wählen (0=Zurück)"
         config_saved = "Konfiguration erfolgreich gespeichert!"
+        ocid_reset_confirm = "Möchtest du die OCIDs wirklich zurücksetzen? Dies löscht ~/.oci/config (J/N)"
+        ocid_reset_success = "OCIDs zurückgesetzt! Bitte führe das Python-Skript aus, um neu zu konfigurieren."
+        ocid_reset_cancelled = "Zurücksetzen abgebrochen."
 
         # Config prompts
         prompt_instance_name = "Instanz-Name eingeben (ENTER zum Abbrechen)"
@@ -308,6 +318,7 @@ $TRANSLATIONS = @{
         job_notfound = "Kein Hintergrund-Job gefunden."
 
         press_enter = "Enter drücken zum Fortfahren..."
+        exiting = "Wird in 3 Sekunden beendet..."
     }
 }
 
@@ -388,13 +399,14 @@ function Show-ConfigMenu {
         Write-Host "  5. $(Get-Translation 'config_5')" -ForegroundColor Green
         Write-Host "  6. $(Get-Translation 'config_6')" -ForegroundColor Green
         Write-Host "  7. $(Get-Translation 'config_7')" -ForegroundColor Green
+        Write-Host "  8. $(Get-Translation 'config_8')" -ForegroundColor Yellow
         Write-Host ""
         Write-Host "  0. $(Get-Translation 'config_0')" -ForegroundColor DarkGray
         Write-Host ""
 
         # Wait for single keypress for config menu navigation (no Enter required)
         $choice = ""
-        while ($choice -notin @("0", "1", "2", "3", "4", "5", "6", "7")) {
+        while ($choice -notin @("0", "1", "2", "3", "4", "5", "6", "7", "8")) {
             $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
             $choice = $key.Character
         }
@@ -524,6 +536,37 @@ function Show-ConfigMenu {
                     Write-Host "$(Get-Translation 'press_enter')" -ForegroundColor DarkGray
                     Read-Host
                 }
+            }
+            "8" {
+                Clear-Host
+                Write-Host ""
+                Write-Host "$(Get-Translation 'ocid_reset_confirm')" -ForegroundColor Yellow
+                $confirmation = Read-Host
+
+                if ($confirmation -match '^[YyJj]$') {
+                    $ociConfigPath = Join-Path $env:USERPROFILE ".oci\config"
+
+                    if (Test-Path $ociConfigPath) {
+                        try {
+                            Remove-Item $ociConfigPath -Force
+                            Write-Host ""
+                            Write-Host "$(Get-Translation 'ocid_reset_success')" -ForegroundColor Green
+                        } catch {
+                            Write-Host ""
+                            Write-Host "Error: $_" -ForegroundColor Red
+                        }
+                    } else {
+                        Write-Host ""
+                        Write-Host "~/.oci/config not found (already deleted or never configured)" -ForegroundColor Yellow
+                    }
+                } else {
+                    Write-Host ""
+                    Write-Host "$(Get-Translation 'ocid_reset_cancelled')" -ForegroundColor Gray
+                }
+
+                Write-Host ""
+                Write-Host "$(Get-Translation 'press_enter')" -ForegroundColor DarkGray
+                Read-Host
             }
             "0" { return }
         }
@@ -767,7 +810,7 @@ while ($true) {
         "0" {
             Write-MenuLog "Control Menu exited by user"
             Write-Host ""
-            Write-Host "Exiting in 3 seconds... / Wird in 3 Sekunden beendet..." -ForegroundColor Yellow
+            Write-Host "$(Get-Translation 'exiting')" -ForegroundColor Yellow
             for ($i = 3; $i -gt 0; $i--) {
                 Write-Host "  $i..." -ForegroundColor Gray
                 Start-Sleep -Seconds 1
