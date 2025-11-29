@@ -1,10 +1,16 @@
 ﻿#!/usr/bin/env python3
 """
-OCI Instance Sniper v1.3
+OCI Instance Sniper v1.4
 Automatically attempts to create an ARM instance in OCI when capacity becomes available.
 
 Author: Dave Vaupel
-Date: 2025-11-25
+Date: 2025-11-29
+
+Changelog v1.4:
+- Added interactive language selection (EN/DE) at startup with single-keypress input
+- Language selection skipped if already set in config.json
+- Single-keypress uses msvcrt.getch() on Windows (no Enter needed)
+- Fallback to standard input() on Linux/Mac
 
 Changelog v1.3:
 - Added automatic retry logic with exponential backoff for network errors
@@ -60,7 +66,17 @@ except ImportError as e:
     print(f"Missing dependency: {missing_module}")
     print("Installing required packages...")
     try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt", "--quiet"])
+        subprocess.check_call(
+            [
+                sys.executable,
+                "-m",
+                "pip",
+                "install",
+                "-r",
+                "requirements.txt",
+                "--quiet",
+            ]
+        )
         print("Dependencies installed successfully!")
         print("Please restart the script.")
         sys.exit(0)
@@ -76,37 +92,53 @@ except ImportError as e:
 
 def load_config_file():
     """Load configuration from config/sniper-config.json if it exists"""
-    config_file = os.path.join(os.path.dirname(__file__), "config", "sniper-config.json")
+    config_file = os.path.join(
+        os.path.dirname(__file__), "config", "sniper-config.json"
+    )
     if os.path.exists(config_file):
         try:
             with open(config_file, "r", encoding="utf-8") as f:
                 config = json.load(f)
                 # Validate config values
                 if not isinstance(config, dict):
-                    print("Warning: Config file is not a valid JSON object. Using defaults.")
+                    print(
+                        "Warning: Config file is not a valid JSON object. Using defaults."
+                    )
                     return {}
                 # Validate OCPUs (1-4 for Free Tier)
                 if "ocpus" in config:
-                    if not isinstance(config["ocpus"], int) or config["ocpus"] < 1 or config["ocpus"] > 4:
-                        print(f"Warning: Invalid OCPUs value: {config['ocpus']}. Must be 1-4. Using default: 2")
+                    if (
+                        not isinstance(config["ocpus"], int)
+                        or config["ocpus"] < 1
+                        or config["ocpus"] > 4
+                    ):
+                        print(
+                            f"Warning: Invalid OCPUs value: {config['ocpus']}. Must be 1-4. Using default: 2"
+                        )
                         config["ocpus"] = 2
                 # Validate Memory (1-24 GB for Free Tier)
                 if "memory_in_gbs" in config:
                     mem = config["memory_in_gbs"]
                     if not isinstance(mem, int) or mem < 1 or mem > 24:
-                        print(f"Warning: Invalid Memory: {mem}. Must be 1-24 GB. Using default: 12")
+                        print(
+                            f"Warning: Invalid Memory: {mem}. Must be 1-24 GB. Using default: 12"
+                        )
                         config["memory_in_gbs"] = 12
                 # Validate retry delay (minimum 10 seconds)
                 if "retry_delay_seconds" in config:
                     delay = config["retry_delay_seconds"]
                     if not isinstance(delay, int) or delay < 10:
-                        print(f"Warning: Invalid retry delay: {delay}. Must be >= 10s. Using default: 60")
+                        print(
+                            f"Warning: Invalid retry delay: {delay}. Must be >= 10s. Using default: 60"
+                        )
                         config["retry_delay_seconds"] = 60
                 # Validate max attempts (minimum 1)
                 if "max_attempts" in config:
                     attempts = config["max_attempts"]
                     if not isinstance(attempts, int) or attempts < 1:
-                        print(f"Warning: Invalid max attempts: {attempts}. Must be >= 1. Using default: 1440")
+                        print(
+                            f"Warning: Invalid max attempts: {attempts}. Must be >= 1. Using default: 1440"
+                        )
                         config["max_attempts"] = 1440
                 return config
         except json.JSONDecodeError as e:
@@ -122,7 +154,8 @@ def load_config_file():
 # Load config file (will override hardcoded values below if present)
 CONFIG_FILE = load_config_file()
 
-LANGUAGE = CONFIG_FILE.get("language", "EN")  # "EN" for English, "DE" for German
+# Language will be set by select_language() or from config
+LANGUAGE = CONFIG_FILE.get("language", None)
 
 # ============================================================================
 # CONFIGURATION - CUSTOMIZE THESE VALUES
@@ -139,7 +172,9 @@ OCPUS = CONFIG_FILE.get("ocpus", 2)
 MEMORY_IN_GBS = CONFIG_FILE.get("memory_in_gbs", 12)
 
 # Image Configuration (Ubuntu 24.04)
-IMAGE_ID = "ocid1.image.oc1.eu-frankfurt-1.your_image_id_here"  # Ubuntu 24.04 image OCID
+IMAGE_ID = (
+    "ocid1.image.oc1.eu-frankfurt-1.your_image_id_here"  # Ubuntu 24.04 image OCID
+)
 
 # Networking Configuration
 SUBNET_ID = "ocid1.subnet.oc1.eu-frankfurt-1.your_subnet_id_here"  # Your subnet OCID
@@ -155,8 +190,12 @@ RESERVED_PUBLIC_IP = None  # Will be set during runtime
 SSH_PUBLIC_KEY = """your_ssh_public_key_here"""
 
 # Retry Configuration
-RETRY_DELAY_SECONDS = CONFIG_FILE.get("retry_delay_seconds", 60)  # Wait 60 seconds between attempts
-MAX_ATTEMPTS = CONFIG_FILE.get("max_attempts", 1440)  # Try for 24 hours (1440 * 60 seconds)
+RETRY_DELAY_SECONDS = CONFIG_FILE.get(
+    "retry_delay_seconds", 60
+)  # Wait 60 seconds between attempts
+MAX_ATTEMPTS = CONFIG_FILE.get(
+    "max_attempts", 1440
+)  # Try for 24 hours (1440 * 60 seconds)
 
 # Instance Name
 INSTANCE_NAME = CONFIG_FILE.get("instance_name", "oci-instance")
@@ -294,6 +333,45 @@ def t(key):
     return TRANSLATIONS.get(LANGUAGE, TRANSLATIONS["EN"]).get(key, key)
 
 
+def select_language():
+    """
+    Interactive language selection at startup (if not set in config).
+    Uses single-keypress input (no Enter needed).
+    """
+    global LANGUAGE
+
+    # If language already set in config, skip selection
+    if LANGUAGE is not None:
+        return
+
+    print()
+    print("=" * 80)
+    print("  LANGUAGE / SPRACHE")
+    print("=" * 80)
+    print()
+    print("  [1] English")
+    print("  [2] Deutsch")
+    print()
+    print("=" * 80)
+    print()
+    print("Choice / Wahl: ", end="", flush=True)
+
+    # Single-keypress input (Windows compatible)
+    if sys.platform == "win32":
+        import msvcrt
+
+        while True:
+            key = msvcrt.getch().decode("utf-8")
+            if key in ["1", "2"]:
+                print(f"{key} ==\n")
+                LANGUAGE = "EN" if key == "1" else "DE"
+                break
+    else:
+        # Fallback for Linux/Mac - require Enter
+        choice = input()
+        LANGUAGE = "EN" if choice == "1" else "DE"
+
+
 # ============================================================================
 # LOGGING SETUP
 # ============================================================================
@@ -308,7 +386,10 @@ if sys.platform == "win32":
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler("oci-sniper.log", encoding="utf-8"), logging.StreamHandler(sys.stdout)],
+    handlers=[
+        logging.FileHandler("oci-sniper.log", encoding="utf-8"),
+        logging.StreamHandler(sys.stdout),
+    ],
 )
 logger = logging.getLogger(__name__)
 
@@ -439,7 +520,9 @@ def wait_for_instance_running(compute_client, instance_id, network_client, timeo
                     logger.warning(f"Could not get VNIC info: {str(e)}")
                     return instance, None, None
 
-            logger.info(f"⏳ {t('instance_state')}: {instance.lifecycle_state} ({elapsed}s)")
+            logger.info(
+                f"⏳ {t('instance_state')}: {instance.lifecycle_state} ({elapsed}s)"
+            )
             time.sleep(10)
 
         except Exception as e:
@@ -450,14 +533,18 @@ def wait_for_instance_running(compute_client, instance_id, network_client, timeo
     return None, None, None
 
 
-def create_reserved_ip(network_client, compartment_id, display_name="nextcloud-reserved-ip"):
+def create_reserved_ip(
+    network_client, compartment_id, display_name="nextcloud-reserved-ip"
+):
     """Create a reserved public IP"""
 
     logger.info(f"🔄 {t('reserved_ip_creating')}")
 
     try:
         reserved_ip_details = oci.core.models.CreatePublicIpDetails(
-            compartment_id=compartment_id, lifetime="RESERVED", display_name=display_name
+            compartment_id=compartment_id,
+            lifetime="RESERVED",
+            display_name=display_name,
         )
 
         reserved_ip = network_client.create_public_ip(reserved_ip_details).data
@@ -488,10 +575,14 @@ def create_instance_config(availability_domain, reserved_ip_id=None):
         compartment_id=COMPARTMENT_ID,
         display_name=INSTANCE_NAME,
         shape=SHAPE,
-        shape_config=oci.core.models.LaunchInstanceShapeConfigDetails(ocpus=OCPUS, memory_in_gbs=MEMORY_IN_GBS),
+        shape_config=oci.core.models.LaunchInstanceShapeConfigDetails(
+            ocpus=OCPUS, memory_in_gbs=MEMORY_IN_GBS
+        ),
         create_vnic_details=create_vnic_details,
         metadata={"ssh_authorized_keys": SSH_PUBLIC_KEY},
-        source_details=oci.core.models.InstanceSourceViaImageDetails(image_id=IMAGE_ID, source_type="image"),
+        source_details=oci.core.models.InstanceSourceViaImageDetails(
+            image_id=IMAGE_ID, source_type="image"
+        ),
     )
 
     return instance_details
@@ -524,7 +615,9 @@ def try_create_instance(compute_client, availability_domain, reserved_ip_id=None
         instance_details = create_instance_config(availability_domain, reserved_ip_id)
 
         # Call with retry logic for network errors
-        response = _launch_instance_with_retry(compute_client, instance_details, availability_domain)
+        response = _launch_instance_with_retry(
+            compute_client, instance_details, availability_domain
+        )
 
         logger.info(f"✅ {t('success')} {availability_domain}!")
         logger.info(f"{t('instance_ocid')}: {response.data.id}")
@@ -553,7 +646,9 @@ def try_create_instance(compute_client, availability_domain, reserved_ip_id=None
         TimeoutError,
     ) as e:
         # Network errors after all retries exhausted
-        logger.error(f"❌ Network error in {availability_domain} after retries: {str(e)}")
+        logger.error(
+            f"❌ Network error in {availability_domain} after retries: {str(e)}"
+        )
         return False, None
 
     except Exception as e:
@@ -595,10 +690,15 @@ def validate_configuration():
         errors.append("SUBNET_ID is not configured")
 
     # Check SSH key
-    if "your_ssh_public_key_here" in SSH_PUBLIC_KEY or len(SSH_PUBLIC_KEY.strip()) < 100:
+    if (
+        "your_ssh_public_key_here" in SSH_PUBLIC_KEY
+        or len(SSH_PUBLIC_KEY.strip()) < 100
+    ):
         errors.append("SSH_PUBLIC_KEY is not configured")
     elif not validate_ssh_key(SSH_PUBLIC_KEY):
-        errors.append("SSH_PUBLIC_KEY has invalid format (must be ssh-rsa, ssh-ed25519, or ecdsa-sha2-*)")
+        errors.append(
+            "SSH_PUBLIC_KEY has invalid format (must be ssh-rsa, ssh-ed25519, or ecdsa-sha2-*)"
+        )
 
     # Validate OCID format
     if not COMPARTMENT_ID.startswith("ocid1."):
@@ -654,12 +754,16 @@ def main():
         if LANGUAGE == "DE":
             logger.error("\n" + "=" * 70)
             logger.error("📋 Du benötigst folgende Informationen:")
-            logger.error("   - User OCID (cloud.oracle.com → Benutzer-Symbol → Mein Profil)")
+            logger.error(
+                "   - User OCID (cloud.oracle.com → Benutzer-Symbol → Mein Profil)"
+            )
             logger.error("   - Tenancy OCID (Benutzer-Symbol → Tenancy: [Name])")
             logger.error("   - Region (z.B. eu-frankfurt-1)")
             logger.error("=" * 70)
             logger.error("\n🔧 Führe aus: oci setup config")
-            logger.error("\nHinweis: Die folgenden Eingabeaufforderungen sind auf Englisch")
+            logger.error(
+                "\nHinweis: Die folgenden Eingabeaufforderungen sind auf Englisch"
+            )
             logger.error("(vom OCI SDK). Nutze die Informationen oben.\n")
         else:
             logger.error("Please run: oci setup config")
@@ -699,7 +803,9 @@ def main():
     while attempt < MAX_ATTEMPTS:
         attempt += 1
         logger.info(f"\n{'='*80}")
-        logger.info(f"{t('attempt')} {attempt}/{MAX_ATTEMPTS} - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        logger.info(
+            f"{t('attempt')} {attempt}/{MAX_ATTEMPTS} - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        )
         logger.info(f"{'='*80}")
 
         # Try each availability domain
@@ -708,7 +814,9 @@ def main():
 
             if success:
                 # Wait for instance to be RUNNING
-                instance, public_ip, private_ip = wait_for_instance_running(compute_client, instance.id, network_client)
+                instance, public_ip, private_ip = wait_for_instance_running(
+                    compute_client, instance.id, network_client
+                )
 
                 # If reserved IP was created but no public IP from VNIC, use reserved IP
                 if not public_ip and reserved_ip_obj:
@@ -720,7 +828,9 @@ def main():
                 logger.info(f"{t('instance_details')}:")
                 logger.info(f"  - Name: {instance.display_name}")
                 logger.info(f"  - OCID: {instance.id}")
-                logger.info(f"  - {t('availability_domains')}: {instance.availability_domain}")
+                logger.info(
+                    f"  - {t('availability_domains')}: {instance.availability_domain}"
+                )
                 logger.info(f"  - Shape: {instance.shape}")
                 logger.info(f"  - State: {instance.lifecycle_state}")
 
@@ -737,7 +847,9 @@ def main():
                     logger.info(f"  ssh ubuntu@{public_ip}")
                     logger.info("")
                     logger.info("First-time connection (auto-accepts fingerprint):")
-                    logger.info(f"  ssh -o StrictHostKeyChecking=accept-new ubuntu@{public_ip}")
+                    logger.info(
+                        f"  ssh -o StrictHostKeyChecking=accept-new ubuntu@{public_ip}"
+                    )
                     logger.info("=" * 80)
 
                     # Generate SSH config
@@ -769,6 +881,9 @@ def main():
 
 
 if __name__ == "__main__":
+    # Select language interactively if not set in config
+    select_language()
+
     try:
         sys.exit(main())
     except KeyboardInterrupt:
