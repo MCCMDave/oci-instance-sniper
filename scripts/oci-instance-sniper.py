@@ -567,8 +567,7 @@ def create_instance_config(availability_domain, reserved_ip_id=None):
 
     create_vnic_details = oci.core.models.CreateVnicDetails(
         subnet_id=SUBNET_ID,
-        assign_public_ip=ASSIGN_PUBLIC_IP if not reserved_ip_id else False,
-        public_ip_id=reserved_ip_id if reserved_ip_id else None,
+        assign_public_ip=ASSIGN_PUBLIC_IP,
     )
 
     instance_details = oci.core.models.LaunchInstanceDetails(
@@ -799,86 +798,110 @@ def main():
 
     logger.info("")
 
-    # Main retry loop
+    # Main retry loop with Ctrl+C handling
     attempt = 0
-    while attempt < MAX_ATTEMPTS:
-        attempt += 1
-        logger.info(f"\n{'='*80}")
-        logger.info(
-            f"{t('attempt')} {attempt}/{MAX_ATTEMPTS} - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-        )
-        logger.info(f"{'='*80}")
+    try:
+        while attempt < MAX_ATTEMPTS:
+            attempt += 1
+            logger.info(f"\n{'='*80}")
+            logger.info(
+                f"{t('attempt')} {attempt}/{MAX_ATTEMPTS} - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            )
+            logger.info(f"{'='*80}")
 
-        # Try each availability domain
-        for ad in full_ad_names:
-            success, instance = try_create_instance(compute_client, ad, reserved_ip_id)
+            # Try each availability domain
+            for ad in full_ad_names:
+                success, instance = try_create_instance(compute_client, ad, reserved_ip_id)
 
-            if success:
-                # Wait for instance to be RUNNING
-                instance, public_ip, private_ip = wait_for_instance_running(
-                    compute_client, instance.id, network_client
-                )
-
-                # If reserved IP was created but no public IP from VNIC, use reserved IP
-                if not public_ip and reserved_ip_obj:
-                    public_ip = reserved_ip_obj.ip_address
-
-                logger.info("\n" + "=" * 80)
-                logger.info(f"🎉 {t('instance_created_title')}")
-                logger.info("=" * 80)
-                logger.info(f"{t('instance_details')}:")
-                logger.info(f"  - Name: {instance.display_name}")
-                logger.info(f"  - OCID: {instance.id}")
-                logger.info(
-                    f"  - {t('availability_domains')}: {instance.availability_domain}"
-                )
-                logger.info(f"  - Shape: {instance.shape}")
-                logger.info(f"  - State: {instance.lifecycle_state}")
-
-                if public_ip:
-                    logger.info("")
-                    logger.info("=" * 80)
-                    logger.info(f"🌐 {t('ssh_connection_info')}")
-                    logger.info("=" * 80)
-                    logger.info(f"{t('public_ip')}: {public_ip}")
-                    if private_ip:
-                        logger.info(f"{t('private_ip')}: {private_ip}")
-                    logger.info("")
-                    logger.info(f"{t('ssh_command')}:")
-                    logger.info(f"  ssh ubuntu@{public_ip}")
-                    logger.info("")
-                    logger.info("First-time connection (auto-accepts fingerprint):")
-                    logger.info(
-                        f"  ssh -o StrictHostKeyChecking=accept-new ubuntu@{public_ip}"
+                if success:
+                    # Wait for instance to be RUNNING
+                    instance, public_ip, private_ip = wait_for_instance_running(
+                        compute_client, instance.id, network_client
                     )
+
+                    # If reserved IP was created but no public IP from VNIC, use reserved IP
+                    if not public_ip and reserved_ip_obj:
+                        public_ip = reserved_ip_obj.ip_address
+
+                    logger.info("\n" + "=" * 80)
+                    logger.info(f"🎉 {t('instance_created_title')}")
                     logger.info("=" * 80)
+                    logger.info(f"{t('instance_details')}:")
+                    logger.info(f"  - Name: {instance.display_name}")
+                    logger.info(f"  - OCID: {instance.id}")
+                    logger.info(
+                        f"  - {t('availability_domains')}: {instance.availability_domain}"
+                    )
+                    logger.info(f"  - Shape: {instance.shape}")
+                    logger.info(f"  - State: {instance.lifecycle_state}")
 
-                    # Generate SSH config
-                    generate_ssh_config(public_ip, instance.display_name)
+                    if public_ip:
+                        logger.info("")
+                        logger.info("=" * 80)
+                        logger.info(f"🌐 {t('ssh_connection_info')}")
+                        logger.info("=" * 80)
+                        logger.info(f"{t('public_ip')}: {public_ip}")
+                        if private_ip:
+                            logger.info(f"{t('private_ip')}: {private_ip}")
+                        logger.info("")
+                        logger.info(f"{t('ssh_command')}:")
+                        logger.info(f"  ssh ubuntu@{public_ip}")
+                        logger.info("")
+                        logger.info("First-time connection (auto-accepts fingerprint):")
+                        logger.info(
+                            f"  ssh -o StrictHostKeyChecking=accept-new ubuntu@{public_ip}"
+                        )
+                        logger.info("=" * 80)
 
-                    # Send email notification
-                    send_email_notification(instance, public_ip, private_ip)
+                        # Generate SSH config
+                        generate_ssh_config(public_ip, instance.display_name)
 
-                logger.info("")
-                logger.info(f"{t('next_steps')}:")
-                logger.info(f"{t('step_1')}")
-                logger.info(f"{t('step_2')}")
-                logger.info(f"{t('step_3')}")
-                logger.info(f"{t('step_4')}")
-                logger.info("=" * 80)
-                return 0
+                        # Send email notification
+                        send_email_notification(instance, public_ip, private_ip)
 
-            # Small delay between AD attempts
-            time.sleep(2)
+                    logger.info("")
+                    logger.info(f"{t('next_steps')}:")
+                    logger.info(f"{t('step_1')}")
+                    logger.info(f"{t('step_2')}")
+                    logger.info(f"{t('step_3')}")
+                    logger.info(f"{t('step_4')}")
+                    logger.info("=" * 80)
+                    return 0
 
-        # Wait before next attempt
-        if attempt < MAX_ATTEMPTS:
-            logger.info(t("waiting_before_retry").format(seconds=RETRY_DELAY_SECONDS))
-            time.sleep(RETRY_DELAY_SECONDS)
+                # Small delay between AD attempts
+                time.sleep(2)
 
-    logger.warning(f"\n❌ {t('max_attempts_reached').format(attempts=MAX_ATTEMPTS)}")
-    logger.info(t("script_can_restart"))
-    return 1
+            # Wait before next attempt
+            if attempt < MAX_ATTEMPTS:
+                logger.info(t("waiting_before_retry").format(seconds=RETRY_DELAY_SECONDS))
+                time.sleep(RETRY_DELAY_SECONDS)
+
+        logger.warning(f"\n❌ {t('max_attempts_reached').format(attempts=MAX_ATTEMPTS)}")
+        logger.info(t("script_can_restart"))
+        return 1
+
+    except KeyboardInterrupt:
+        logger.info(f"\n\n⚠️  {t('script_interrupted')}")
+        logger.info("=" * 80)
+
+        # Ask user if they want to continue or exit
+        if LANGUAGE == "DE":
+            question = "Möchtest du das Script beenden?"
+        else:
+            question = "Do you want to exit the script?"
+
+        if ask_yes_no(question):
+            logger.info(t("script_can_restart"))
+            return 130  # Standard exit code for SIGINT
+        else:
+            logger.info("")
+            if LANGUAGE == "DE":
+                logger.info("▶️  Fortsetzen...")
+            else:
+                logger.info("▶️  Continuing...")
+            logger.info("=" * 80)
+            # Recursively call main() to restart the process
+            return main()
 
 
 if __name__ == "__main__":
