@@ -17,14 +17,14 @@
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
-# ============================================================================
+# ================================================================================
 # LANGUAGE SELECTION
-# ============================================================================
+# ================================================================================
 
 Write-Host ""
-Write-Host "============================================================================" -ForegroundColor Cyan
+Write-Host "================================================================================" -ForegroundColor Cyan
 Write-Host "      OCI INSTANCE SNIPER - SETUP" -ForegroundColor Cyan
-Write-Host "============================================================================" -ForegroundColor Cyan
+Write-Host "================================================================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Select Language / Sprache wählen:" -ForegroundColor Yellow
 Write-Host "  1. English" -ForegroundColor White
@@ -58,9 +58,9 @@ switch ($langChoice) {
 
 Clear-Host
 
-# ============================================================================
+# ================================================================================
 # LANGUAGE CONFIGURATION
-# ============================================================================
+# ================================================================================
 
 # Language strings
 $strings = @{
@@ -267,9 +267,9 @@ $strings = @{
 $s = $strings[$LANGUAGE]
 
 Write-Host ""
-Write-Host "============================================================================" -ForegroundColor Cyan
+Write-Host "================================================================================" -ForegroundColor Cyan
 Write-Host "      $($s.title)" -ForegroundColor Cyan
-Write-Host "============================================================================" -ForegroundColor Cyan
+Write-Host "================================================================================" -ForegroundColor Cyan
 Write-Host ""
 
 # Detect if this is first-time setup
@@ -314,9 +314,9 @@ if ($isFirstRun) {
     Write-Host ""
 }
 
-# ============================================================================
+# ================================================================================
 # STEP 1: CHECK PYTHON
-# ============================================================================
+# ================================================================================
 
 Write-Host "`n[1/5] $($s.checking_python)" -ForegroundColor Cyan
 
@@ -349,9 +349,9 @@ catch {
 Write-Host "  $($s.upgrading_pip)" -ForegroundColor Gray
 python -m pip install --upgrade pip --quiet 2>&1 | Out-Null
 
-# ============================================================================
+# ================================================================================
 # STEP 2: INSTALL OCI CLI
-# ============================================================================
+# ================================================================================
 
 Write-Host "`n[2/5] $($s.installing_oci)" -ForegroundColor Cyan
 
@@ -377,9 +377,9 @@ catch {
     }
 }
 
-# ============================================================================
+# ================================================================================
 # STEP 3: CONFIGURE OCI CREDENTIALS
-# ============================================================================
+# ================================================================================
 
 Write-Host "`n[3/5] $($s.config_credentials)" -ForegroundColor Cyan
 
@@ -412,9 +412,9 @@ if (-not (Test-Path $configPath)) {
 $publicKeyPath = "$env:USERPROFILE\.oci\oci_api_key_public.pem"
 if ((Test-Path $publicKeyPath) -and (-not $skipKeyPrompt)) {
     Write-Host ""
-    Write-Host "  ============================================================================" -ForegroundColor Yellow
+    Write-Host "  ================================================================================" -ForegroundColor Yellow
     Write-Host "  $($s.key_upload_title)" -ForegroundColor Yellow
-    Write-Host "  ============================================================================" -ForegroundColor Yellow
+    Write-Host "  ================================================================================" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "  1. $($s.key_upload_1)" -ForegroundColor White
     Write-Host "  2. $($s.key_upload_2)" -ForegroundColor White
@@ -436,9 +436,9 @@ if ((Test-Path $publicKeyPath) -and (-not $skipKeyPrompt)) {
 
 Write-Host "  [OK] $($s.credentials_ok)" -ForegroundColor Green
 
-# ============================================================================
+# ================================================================================
 # STEP 4: FETCH OCIDs
-# ============================================================================
+# ================================================================================
 
 Write-Host "`n[4/5] $($s.fetching_ocids)" -ForegroundColor Cyan
 
@@ -536,9 +536,9 @@ catch {
     }
 }
 
-# ============================================================================
+# ================================================================================
 # STEP 5: UPDATE PYTHON SCRIPT
-# ============================================================================
+# ================================================================================
 
 Write-Host "`n[5/5] $($s.updating_script)" -ForegroundColor Cyan
 
@@ -628,14 +628,14 @@ catch {
     exit 1
 }
 
-# ============================================================================
+# ================================================================================
 # SUMMARY
-# ============================================================================
+# ================================================================================
 
 Write-Host ""
-Write-Host "============================================================================" -ForegroundColor Cyan
+Write-Host "================================================================================" -ForegroundColor Cyan
 Write-Host "                    $($s.setup_complete)" -ForegroundColor Green
-Write-Host "============================================================================" -ForegroundColor Cyan
+Write-Host "================================================================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "$($s.config_summary)" -ForegroundColor Yellow
 Write-Host "  $($s.compartment) $TENANCY_OCID" -ForegroundColor White
@@ -647,9 +647,9 @@ if ($sshKeyConfigured) {
     Write-Host "  $($s.ssh_key)     $($s.not_configured)" -ForegroundColor Yellow
 }
 Write-Host ""
-Write-Host "============================================================================" -ForegroundColor Cyan
+Write-Host "================================================================================" -ForegroundColor Cyan
 Write-Host "$($s.next_steps)" -ForegroundColor Yellow
-Write-Host "============================================================================" -ForegroundColor Cyan
+Write-Host "================================================================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "$($s.run_sniper)" -ForegroundColor Yellow
 Write-Host "  .\scripts\control-menu.ps1" -ForegroundColor White
@@ -657,7 +657,7 @@ Write-Host ""
 Write-Host "$($s.monitor_log)" -ForegroundColor Yellow
 Write-Host "  Get-Content -Path oci-sniper.log -Wait -Tail 20" -ForegroundColor White
 Write-Host ""
-Write-Host "============================================================================" -ForegroundColor Cyan
+Write-Host "================================================================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "[!] $($s.important)" -ForegroundColor Yellow
 Write-Host "    $($s.best_times)" -ForegroundColor Yellow
