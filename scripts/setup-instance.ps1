@@ -6,10 +6,44 @@ param()
 
 $ErrorActionPreference = "Stop"
 
-# Language setting
-$LANGUAGE = "DE"  # or "EN"
+# ============================================================================
+# LANGUAGE SELECTION
+# ============================================================================
 
-# Translations
+function Select-Language {
+    Clear-Host
+    Write-Host ""
+    Write-Host ("=" * 80) -ForegroundColor Cyan
+    Write-Host "OCI Instance Sniper - Multi-Instance Setup" -ForegroundColor Cyan
+    Write-Host ("=" * 80) -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "Select Language / Sprache wählen:" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "  1. English" -ForegroundColor White
+    Write-Host "  2. Deutsch" -ForegroundColor White
+    Write-Host ""
+    Write-Host "Choice / Wahl: " -NoNewline -ForegroundColor White
+
+    # Single-keypress input
+    $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    $choice = $key.Character
+
+    Write-Host $choice
+    Write-Host ""
+
+    switch ($choice) {
+        "1" { return "EN" }
+        "2" { return "DE" }
+        default { return "EN" }
+    }
+}
+
+$LANGUAGE = Select-Language
+
+# ============================================================================
+# TRANSLATIONS
+# ============================================================================
+
 $translations = @{
     EN = @{
         title = "OCI Instance Sniper - Multi-Instance Setup"
@@ -25,7 +59,7 @@ $translations = @{
         memory = "Memory in GB (6-24, Free Tier max: 24 total)"
         retry_delay = "Retry delay in seconds (recommended: 60)"
         max_attempts = "Max attempts (1440 = 24 hours at 60s delay)"
-        language_choice = "Language (EN/DE)"
+        language_choice = "Language (1=EN, 2=DE)"
         reserved_ip = "Reserved IP OCID (optional, press Enter to skip)"
         reserved_ip_hint = "Tip: Run 'oci network public-ip list --compartment-id <COMPARTMENT_ID> --scope REGION --all'"
         creating = "Creating instance configuration..."
@@ -37,6 +71,7 @@ $translations = @{
         step3 = "3. View logs: .\scripts\manage-instances.ps1 -Logs {0}"
         create_another = "Create another instance? (y/n)"
         goodbye = "Setup complete. Use manage-instances.ps1 to control your instances."
+        press_key = "Press any key to continue..."
     }
     DE = @{
         title = "OCI Instance Sniper - Multi-Instance Setup"
@@ -52,7 +87,7 @@ $translations = @{
         memory = "Arbeitsspeicher in GB (6-24, Free Tier max: 24 gesamt)"
         retry_delay = "Wiederholungsverzögerung in Sekunden (empfohlen: 60)"
         max_attempts = "Max. Versuche (1440 = 24 Stunden bei 60s Verzögerung)"
-        language_choice = "Sprache (EN/DE)"
+        language_choice = "Sprache (1=EN, 2=DE)"
         reserved_ip = "Reservierte IP OCID (optional, Enter zum Überspringen)"
         reserved_ip_hint = "Tipp: Führe aus 'oci network public-ip list --compartment-id <COMPARTMENT_ID> --scope REGION --all'"
         creating = "Erstelle Instance-Konfiguration..."
@@ -64,12 +99,30 @@ $translations = @{
         step3 = "3. Logs ansehen: .\scripts\manage-instances.ps1 -Logs {0}"
         create_another = "Weitere Instance erstellen? (j/n)"
         goodbye = "Setup abgeschlossen. Nutze manage-instances.ps1 um deine Instances zu steuern."
+        press_key = "Beliebige Taste drücken..."
     }
 }
 
 function t($key) {
     return $translations[$LANGUAGE][$key]
 }
+
+# ============================================================================
+# HELPER FUNCTIONS
+# ============================================================================
+
+function Read-SingleKey {
+    param([string]$Prompt)
+    Write-Host $Prompt -NoNewline -ForegroundColor White
+    $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    $choice = $key.Character
+    Write-Host $choice
+    return $choice
+}
+
+# ============================================================================
+# MAIN LOGIC
+# ============================================================================
 
 # Project root
 $projectRoot = Split-Path -Parent $PSScriptRoot
@@ -83,9 +136,9 @@ if (-not (Test-Path $instancesDir)) {
 # Clear screen and show title
 Clear-Host
 Write-Host ""
-Write-Host "=" * 80 -ForegroundColor Cyan
+Write-Host ("=" * 80) -ForegroundColor Cyan
 Write-Host (t "title") -ForegroundColor Cyan
-Write-Host "=" * 80 -ForegroundColor Cyan
+Write-Host ("=" * 80) -ForegroundColor Cyan
 Write-Host ""
 Write-Host (t "welcome") -ForegroundColor Yellow
 Write-Host ""
@@ -96,9 +149,9 @@ while ($true) {
     $existingInstances = Get-ChildItem -Path $instancesDir -Directory -ErrorAction SilentlyContinue
 
     Write-Host ""
-    Write-Host "=" * 80 -ForegroundColor Gray
+    Write-Host ("=" * 80) -ForegroundColor Gray
     Write-Host (t "existing_instances") -ForegroundColor Green
-    Write-Host "=" * 80 -ForegroundColor Gray
+    Write-Host ("=" * 80) -ForegroundColor Gray
 
     if ($existingInstances) {
         foreach ($instance in $existingInstances) {
@@ -114,9 +167,9 @@ while ($true) {
     }
 
     Write-Host ""
-    Write-Host "=" * 80 -ForegroundColor Gray
+    Write-Host ("=" * 80) -ForegroundColor Gray
     Write-Host (t "create_new") -ForegroundColor Yellow
-    Write-Host "=" * 80 -ForegroundColor Gray
+    Write-Host ("=" * 80) -ForegroundColor Gray
     Write-Host ""
 
     # Get instance name
@@ -141,20 +194,22 @@ while ($true) {
     # Region selection
     Write-Host ""
     Write-Host (t "select_region") -ForegroundColor Cyan
-    Write-Host "  1. eu-frankfurt-1 (Frankfurt)"
-    Write-Host "  2. eu-paris-1 (Paris)"
-    Write-Host "  3. eu-amsterdam-1 (Amsterdam)"
-    Write-Host "  4. uk-london-1 (London)"
-    Write-Host "  5. us-ashburn-1 (Ashburn)"
-    Write-Host "  6. us-phoenix-1 (Phoenix)"
+    Write-Host "  1. eu-frankfurt-1 (Frankfurt)" -ForegroundColor White
+    Write-Host "  2. eu-paris-1 (Paris)" -ForegroundColor White
+    Write-Host "  3. eu-amsterdam-1 (Amsterdam)" -ForegroundColor White
+    Write-Host "  4. uk-london-1 (London)" -ForegroundColor White
+    Write-Host "  5. us-ashburn-1 (Ashburn)" -ForegroundColor White
+    Write-Host "  6. us-phoenix-1 (Phoenix)" -ForegroundColor White
+    Write-Host ""
 
     do {
-        $regionChoice = Read-Host "Choice (1-6)"
+        $regionChoice = Read-SingleKey "Choice (1-6): "
         $regions = @("eu-frankfurt-1", "eu-paris-1", "eu-amsterdam-1", "uk-london-1", "us-ashburn-1", "us-phoenix-1")
-        if ($regionChoice -match '^\d$' -and [int]$regionChoice -ge 1 -and [int]$regionChoice -le 6) {
+        if ($regionChoice -match '^[1-6]$') {
             $region = $regions[[int]$regionChoice - 1]
             break
         }
+        Write-Host "Invalid choice. Please enter 1-6." -ForegroundColor Red
     } while ($true)
 
     # Collect configuration
@@ -171,9 +226,17 @@ while ($true) {
     $maxAttempts = Read-Host (t "max_attempts")
     if ([string]::IsNullOrWhiteSpace($maxAttempts)) { $maxAttempts = 1440 }
 
-    $langChoice = Read-Host (t "language_choice")
-    if ([string]::IsNullOrWhiteSpace($langChoice)) { $langChoice = $LANGUAGE }
+    Write-Host ""
+    $langChoice = Read-SingleKey ((t "language_choice") + ": ")
+    if ($langChoice -eq "1") {
+        $selectedLang = "EN"
+    } elseif ($langChoice -eq "2") {
+        $selectedLang = "DE"
+    } else {
+        $selectedLang = $LANGUAGE
+    }
 
+    Write-Host ""
     Write-Host ""
     Write-Host (t "reserved_ip_hint") -ForegroundColor Gray
     $reservedIpOcid = Read-Host (t "reserved_ip")
@@ -198,7 +261,7 @@ while ($true) {
         retry_delay_seconds = [int]$retryDelay
         max_attempts = [int]$maxAttempts
         region = $region
-        language = $langChoice.ToUpper()
+        language = $selectedLang
         reserved_public_ip_ocid = $reservedIpOcid
     }
 
@@ -207,9 +270,9 @@ while ($true) {
 
     # Success message
     Write-Host ""
-    Write-Host "=" * 80 -ForegroundColor Green
+    Write-Host ("=" * 80) -ForegroundColor Green
     Write-Host ((t "success") -f $instanceName) -ForegroundColor Green
-    Write-Host "=" * 80 -ForegroundColor Green
+    Write-Host ("=" * 80) -ForegroundColor Green
     Write-Host ((t "location") -f $instancePath) -ForegroundColor Gray
     Write-Host ""
     Write-Host (t "next_steps") -ForegroundColor Cyan
@@ -219,14 +282,21 @@ while ($true) {
     Write-Host ""
 
     # Ask to create another
-    $createAnother = Read-Host (t "create_another")
-    if ($createAnother -notmatch '^[yj]') {
+    $createAnother = Read-SingleKey ((t "create_another") + " ")
+    if ($createAnother -notmatch '^[yjYJ]') {
         break
     }
 
     Clear-Host
+    Write-Host ""
+    Write-Host ("=" * 80) -ForegroundColor Cyan
+    Write-Host (t "title") -ForegroundColor Cyan
+    Write-Host ("=" * 80) -ForegroundColor Cyan
+    Write-Host ""
 }
 
 Write-Host ""
 Write-Host (t "goodbye") -ForegroundColor Green
 Write-Host ""
+Write-Host (t "press_key") -ForegroundColor Gray
+$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")

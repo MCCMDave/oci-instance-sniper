@@ -24,10 +24,49 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# Language setting
-$LANGUAGE = "DE"  # or "EN"
+# ============================================================================
+# LANGUAGE SELECTION
+# ============================================================================
 
-# Translations
+function Select-Language {
+    Clear-Host
+    Write-Host ""
+    Write-Host ("=" * 80) -ForegroundColor Cyan
+    Write-Host "OCI Instance Sniper - Instance Manager" -ForegroundColor Cyan
+    Write-Host ("=" * 80) -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "Select Language / Sprache wählen:" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "  1. English" -ForegroundColor White
+    Write-Host "  2. Deutsch" -ForegroundColor White
+    Write-Host ""
+    Write-Host "Choice / Wahl: " -NoNewline -ForegroundColor White
+
+    # Single-keypress input
+    $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    $choice = $key.Character
+
+    Write-Host $choice
+    Write-Host ""
+
+    switch ($choice) {
+        "1" { return "EN" }
+        "2" { return "DE" }
+        default { return "EN" }
+    }
+}
+
+# Only ask for language in interactive mode
+if ($Interactive -or (-not $Start -and -not $Stop -and -not $Logs -and -not $Status -and -not $StopAll)) {
+    $LANGUAGE = Select-Language
+} else {
+    $LANGUAGE = "EN"  # Default for CLI commands
+}
+
+# ============================================================================
+# TRANSLATIONS
+# ============================================================================
+
 $translations = @{
     EN = @{
         title = "OCI Instance Sniper - Instance Manager"
@@ -57,7 +96,7 @@ $translations = @{
         stopping_all = "Stopping all instances..."
         viewing_logs = "Viewing logs for '{0}' (Press Ctrl+C to exit)..."
         no_logs = "No logs found for '{0}'."
-        press_enter = "Press Enter to continue..."
+        press_enter = "Press any key to continue..."
     }
     DE = @{
         title = "OCI Instance Sniper - Instance Manager"
@@ -87,7 +126,7 @@ $translations = @{
         stopping_all = "Stoppe alle Instances..."
         viewing_logs = "Zeige Logs für '{0}' (Strg+C zum Beenden)..."
         no_logs = "Keine Logs gefunden für '{0}'."
-        press_enter = "Enter drücken zum Fortfahren..."
+        press_enter = "Beliebige Taste drücken..."
     }
 }
 
@@ -95,7 +134,23 @@ function t($key) {
     return $translations[$LANGUAGE][$key]
 }
 
-# Project paths
+# ============================================================================
+# HELPER FUNCTIONS
+# ============================================================================
+
+function Read-SingleKey {
+    param([string]$Prompt)
+    Write-Host $Prompt -NoNewline -ForegroundColor White
+    $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    $choice = $key.Character
+    Write-Host $choice
+    return $choice
+}
+
+# ============================================================================
+# PROJECT PATHS
+# ============================================================================
+
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $instancesDir = Join-Path $projectRoot "instances"
 $scriptPath = Join-Path $projectRoot "scripts\oci-instance-sniper.py"
@@ -107,7 +162,10 @@ if (-not (Test-Path $instancesDir)) {
     exit 1
 }
 
-# Get all instances
+# ============================================================================
+# INSTANCE MANAGEMENT FUNCTIONS
+# ============================================================================
+
 function Get-Instances {
     $instances = @()
     Get-ChildItem -Path $instancesDir -Directory | ForEach-Object {
@@ -126,7 +184,6 @@ function Get-Instances {
     return $instances
 }
 
-# Get instance state
 function Get-InstanceState {
     if (Test-Path $stateFile) {
         return Get-Content $stateFile -Raw | ConvertFrom-Json
@@ -134,12 +191,10 @@ function Get-InstanceState {
     return @{}
 }
 
-# Save instance state
 function Save-InstanceState($state) {
     $state | ConvertTo-Json | Set-Content -Path $stateFile -Encoding UTF8
 }
 
-# Check if instance is running
 function Test-InstanceRunning($instanceName) {
     $state = Get-InstanceState
     if ($state.PSObject.Properties.Name -contains $instanceName) {
@@ -154,7 +209,6 @@ function Test-InstanceRunning($instanceName) {
     return $false
 }
 
-# Start instance
 function Start-Instance($instance) {
     Write-Host ((t "starting") -f $instance.Name) -ForegroundColor Yellow
 
@@ -180,9 +234,6 @@ function Start-Instance($instance) {
     $process.StartInfo = $startInfo
 
     # Redirect output to log file
-    $outputBuilder = New-Object System.Text.StringBuilder
-    $errorBuilder = New-Object System.Text.StringBuilder
-
     $outputHandler = {
         if (-not [string]::IsNullOrEmpty($EventArgs.Data)) {
             $EventArgs.Data | Out-File -FilePath $using:logFile -Append -Encoding UTF8
@@ -204,6 +255,7 @@ function Start-Instance($instance) {
 
     # Save state
     $state = Get-InstanceState
+    if (-not $state) { $state = @{} }
     $state | Add-Member -NotePropertyName $instance.Name -NotePropertyValue @{
         pid = $process.Id
         started = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
@@ -217,7 +269,6 @@ function Start-Instance($instance) {
     Write-Host "Log: $logFile" -ForegroundColor Gray
 }
 
-# Stop instance
 function Stop-Instance($instanceName) {
     Write-Host ((t "stopping") -f $instanceName) -ForegroundColor Yellow
 
@@ -239,13 +290,12 @@ function Stop-Instance($instanceName) {
     }
 }
 
-# Show status
 function Show-Status {
     Clear-Host
     Write-Host ""
-    Write-Host "=" * 100 -ForegroundColor Cyan
+    Write-Host ("=" * 100) -ForegroundColor Cyan
     Write-Host (t "status_title") -ForegroundColor Cyan
-    Write-Host "=" * 100 -ForegroundColor Cyan
+    Write-Host ("=" * 100) -ForegroundColor Cyan
     Write-Host ""
 
     $instances = Get-Instances
@@ -266,11 +316,10 @@ function Show-Status {
 
     $statusTable | Format-Table -AutoSize
 
-    Write-Host "=" * 100 -ForegroundColor Cyan
+    Write-Host ("=" * 100) -ForegroundColor Cyan
     Write-Host ""
 }
 
-# View logs
 function Show-Logs($instanceName) {
     $instances = Get-Instances
     $instance = $instances | Where-Object { $_.Name -eq $instanceName }
@@ -294,14 +343,17 @@ function Show-Logs($instanceName) {
     }
 }
 
-# Interactive menu
+# ============================================================================
+# INTERACTIVE MENU
+# ============================================================================
+
 function Show-InteractiveMenu {
     while ($true) {
         Clear-Host
         Write-Host ""
-        Write-Host "=" * 80 -ForegroundColor Cyan
+        Write-Host ("=" * 80) -ForegroundColor Cyan
         Write-Host (t "menu_title") -ForegroundColor Cyan
-        Write-Host "=" * 80 -ForegroundColor Cyan
+        Write-Host ("=" * 80) -ForegroundColor Cyan
         Write-Host ""
         Write-Host "  1. " (t "menu_start") -ForegroundColor White
         Write-Host "  2. " (t "menu_stop") -ForegroundColor White
@@ -311,65 +363,82 @@ function Show-InteractiveMenu {
         Write-Host "  0. " (t "menu_exit") -ForegroundColor White
         Write-Host ""
 
-        $choice = Read-Host "Choice"
+        $choice = Read-SingleKey "Choice: "
 
         switch ($choice) {
             "1" {
                 # Start instance
                 $instances = Get-Instances
                 Write-Host ""
+                Write-Host ""
                 Write-Host ((t "select_instance") -f "starten") -ForegroundColor Yellow
                 for ($i = 0; $i -lt $instances.Count; $i++) {
-                    Write-Host "  $($i + 1). $($instances[$i].Name) - $($instances[$i].Config.region)"
+                    Write-Host "  $($i + 1). $($instances[$i].Name) - $($instances[$i].Config.region)" -ForegroundColor White
                 }
-                $selection = Read-Host "Choice"
-                if ($selection -match '^\d+$' -and [int]$selection -ge 1 -and [int]$selection -le $instances.Count) {
+                Write-Host ""
+                $selection = Read-SingleKey "Choice: "
+                if ($selection -match '^[1-9]$' -and [int]$selection -le $instances.Count) {
                     $instance = $instances[[int]$selection - 1]
+                    Write-Host ""
                     Start-Instance $instance
-                    Read-Host (t "press_enter")
+                    Write-Host ""
+                    Write-Host (t "press_enter") -ForegroundColor Gray
+                    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
                 }
             }
             "2" {
                 # Stop instance
                 $instances = Get-Instances
                 Write-Host ""
+                Write-Host ""
                 Write-Host ((t "select_instance") -f "stoppen") -ForegroundColor Yellow
                 for ($i = 0; $i -lt $instances.Count; $i++) {
-                    Write-Host "  $($i + 1). $($instances[$i].Name)"
+                    Write-Host "  $($i + 1). $($instances[$i].Name)" -ForegroundColor White
                 }
-                $selection = Read-Host "Choice"
-                if ($selection -match '^\d+$' -and [int]$selection -ge 1 -and [int]$selection -le $instances.Count) {
+                Write-Host ""
+                $selection = Read-SingleKey "Choice: "
+                if ($selection -match '^[1-9]$' -and [int]$selection -le $instances.Count) {
+                    Write-Host ""
                     Stop-Instance $instances[[int]$selection - 1].Name
-                    Read-Host (t "press_enter")
+                    Write-Host ""
+                    Write-Host (t "press_enter") -ForegroundColor Gray
+                    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
                 }
             }
             "3" {
                 # Show status
                 Show-Status
-                Read-Host (t "press_enter")
+                Write-Host (t "press_enter") -ForegroundColor Gray
+                $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
             }
             "4" {
                 # View logs
                 $instances = Get-Instances
                 Write-Host ""
+                Write-Host ""
                 Write-Host ((t "select_instance") -f "Logs anzeigen") -ForegroundColor Yellow
                 for ($i = 0; $i -lt $instances.Count; $i++) {
-                    Write-Host "  $($i + 1). $($instances[$i].Name)"
+                    Write-Host "  $($i + 1). $($instances[$i].Name)" -ForegroundColor White
                 }
-                $selection = Read-Host "Choice"
-                if ($selection -match '^\d+$' -and [int]$selection -ge 1 -and [int]$selection -le $instances.Count) {
+                Write-Host ""
+                $selection = Read-SingleKey "Choice: "
+                if ($selection -match '^[1-9]$' -and [int]$selection -le $instances.Count) {
+                    Write-Host ""
                     Show-Logs $instances[[int]$selection - 1].Name
                 }
             }
             "5" {
                 # Stop all
                 Write-Host ""
+                Write-Host ""
                 Write-Host (t "stopping_all") -ForegroundColor Yellow
                 $instances = Get-Instances
                 foreach ($instance in $instances) {
                     Stop-Instance $instance.Name
                 }
-                Read-Host (t "press_enter")
+                Write-Host ""
+                Write-Host (t "press_enter") -ForegroundColor Gray
+                $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
             }
             "0" {
                 return
@@ -378,7 +447,10 @@ function Show-InteractiveMenu {
     }
 }
 
-# Main logic
+# ============================================================================
+# MAIN LOGIC
+# ============================================================================
+
 if ($Interactive) {
     Show-InteractiveMenu
 } elseif ($Start) {
