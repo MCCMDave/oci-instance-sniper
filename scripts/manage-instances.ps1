@@ -76,7 +76,7 @@ $translations = @{
         stopped = "STOPPED"
         instance = "Instance"
         region = "Region"
-        pid = "PID"
+        process_id = "Process ID"
         started = "Started"
         log_file = "Log File"
         menu_title = "Instance Manager - Interactive Mode"
@@ -106,7 +106,7 @@ $translations = @{
         stopped = "GESTOPPT"
         instance = "Instance"
         region = "Region"
-        pid = "PID"
+        process_id = "Prozess-ID"
         started = "Gestartet"
         log_file = "Log-Datei"
         menu_title = "Instance Manager - Interaktiver Modus"
@@ -198,9 +198,9 @@ function Save-InstanceState($state) {
 function Test-InstanceRunning($instanceName) {
     $state = Get-InstanceState
     if ($state.PSObject.Properties.Name -contains $instanceName) {
-        $pid = $state.$instanceName.pid
+        $processId = $state.$instanceName.pid
         try {
-            $process = Get-Process -Id $pid -ErrorAction SilentlyContinue
+            $process = Get-Process -Id $processId -ErrorAction SilentlyContinue
             return $process -ne $null
         } catch {
             return $false
@@ -274,9 +274,9 @@ function Stop-Instance($instanceName) {
 
     $state = Get-InstanceState
     if ($state.PSObject.Properties.Name -contains $instanceName) {
-        $pid = $state.$instanceName.pid
+        $processId = $state.$instanceName.pid
         try {
-            Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
+            Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
             Write-Host ((t "stopped_success") -f $instanceName) -ForegroundColor Green
 
             # Remove from state
@@ -308,7 +308,7 @@ function Show-Status {
             (t "instance") = $instance.Name
             (t "region") = $instance.Config.region
             "Status" = if ($isRunning) { (t "running") } else { (t "stopped") }
-            (t "pid") = if ($isRunning) { $state.($instance.Name).pid } else { "-" }
+            (t "process_id") = if ($isRunning) { $state.($instance.Name).pid } else { "-" }
             (t "started") = if ($isRunning) { $state.($instance.Name).started } else { "-" }
         }
         $statusTable += $statusObj
