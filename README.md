@@ -6,7 +6,27 @@ Automatically creates ARM instances (VM.Standard.A1.Flex) in Oracle Cloud Infras
 
 ## 🚀 Quick Start
 
-### Option 1: Interactive Control Menu (Recommended)
+### Option 1: Multi-Instance Mode ⭐ NEW!
+Run multiple regions simultaneously for maximum success!
+
+```powershell
+# 1. Create instances for different regions
+.\scripts\setup-instance.ps1
+
+# 2. Manage all instances
+.\scripts\manage-instances.ps1
+```
+
+**Perfect for:**
+- Testing multiple regions at once (Frankfurt + Paris + London)
+- Maximizing your chances of getting an ARM instance
+- Independent configs per region (different IPs, resources)
+
+[📖 Multi-Instance Guide](docs/MULTI-INSTANCE.md)
+
+### Option 2: Single Instance Mode
+Traditional setup for one region:
+
 ```powershell
 # 1. Setup (one time)
 .\scripts\setup.ps1
@@ -21,7 +41,7 @@ The menu lets you:
 - Start via Task Scheduler (survives reboots)
 - Check status, view logs, stop script
 
-### Option 2: Direct Execution
+### Option 3: Direct Execution
 ```powershell
 # Run directly in terminal
 python oci-instance-sniper.py
@@ -38,6 +58,7 @@ The script will run for 24 hours, checking every 60 seconds.
 ## 📚 Full Documentation
 
 For complete documentation, troubleshooting, and advanced features, see:
+- [**Multi-Instance Setup Guide** ⭐ NEW!](docs/MULTI-INSTANCE.md)
 - [**English Documentation**](docs/README.md)
 - [**Deutsche Dokumentation**](docs/README.de.md)
 - [**Encoding Rules**](docs/ENCODING-RULES.md)
@@ -47,10 +68,20 @@ For complete documentation, troubleshooting, and advanced features, see:
 ```
 oci-instance-sniper/
 ├── docs/                      # Documentation
-├── scripts/                   # Setup and control scripts
-├── config/                    # Configuration files
-├── backups/                   # Backup files
-├── oci-instance-sniper.py    # Main script
+│   ├── MULTI-INSTANCE.md     # Multi-instance guide ⭐ NEW!
+│   ├── README.md             # Full English docs
+│   └── README.de.md          # Full German docs
+├── scripts/                   # Scripts
+│   ├── setup-instance.ps1    # Multi-instance setup ⭐ NEW!
+│   ├── manage-instances.ps1  # Instance manager ⭐ NEW!
+│   ├── setup.ps1             # Single instance setup
+│   ├── control-menu.ps1      # Single instance control
+│   └── oci-instance-sniper.py # Main Python script
+├── instances/                 # Multi-instance configs ⭐ NEW!
+│   ├── frankfurt/
+│   ├── paris/
+│   └── .../
+├── config/                    # Single instance config
 └── requirements.txt          # Python dependencies
 ```
 

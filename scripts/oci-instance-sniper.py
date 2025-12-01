@@ -92,10 +92,16 @@ except ImportError as e:
 
 def load_config_file():
     """Load configuration from config/sniper-config.json if it exists"""
-    # Config is one level up from scripts/ directory
-    script_dir = os.path.dirname(__file__)
-    project_root = os.path.dirname(script_dir)
-    config_file = os.path.join(project_root, "config", "sniper-config.json")
+    # Check if config path is provided via environment variable (for multi-instance)
+    config_file = os.getenv("SNIPER_CONFIG_PATH")
+
+    # If not provided, use default location
+    if not config_file:
+        # Config is one level up from scripts/ directory
+        script_dir = os.path.dirname(__file__)
+        project_root = os.path.dirname(script_dir)
+        config_file = os.path.join(project_root, "config", "sniper-config.json")
+
     if os.path.exists(config_file):
         try:
             with open(config_file, "r", encoding="utf-8") as f:
