@@ -45,11 +45,16 @@ ssh-config-oci.txt
 *~
 .DS_Store
 
-# Backup files (only in root, backups/ folder is tracked)
+# Backup files
 /*-backup.py
 /*.bak
+/*-backup.ps1
+backups/
+
+# Multi-instance data (instances created via setup-instance.ps1)
+instances/
+.state.json
 
 # Environment variables
 .env
 .env.local
-/*-backup.ps1
