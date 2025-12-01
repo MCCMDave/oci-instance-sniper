@@ -534,11 +534,65 @@ def wait_for_instance_running(compute_client, instance_id, network_client, timeo
     return None, None, None
 
 
-def create_reserved_ip(
-    network_client, compartment_id, display_name="nextcloud-reserved-ip"
+def get_or_create_reserved_ip(
+    network_client, compartment_id, reserved_ip_ocid=None, display_name="oci-reserved-ip"
 ):
-    """Create a reserved public IP"""
+    """Get existing reserved IP by OCID, find available IP, or create a new one
 
+    Args:
+        network_client: OCI VirtualNetworkClient
+        compartment_id: Compartment OCID
+        reserved_ip_ocid: Optional OCID of existing reserved IP to use
+        display_name: Name for newly created IP
+
+    Returns:
+        Reserved IP object or None
+    """
+
+    # Option 1: Use specific IP OCID from config
+    if reserved_ip_ocid:
+        try:
+            logger.info(f"🔍 {t('reserved_ip_checking') if LANGUAGE == 'DE' else 'Using configured reserved IP OCID...'}")
+            reserved_ip = network_client.get_public_ip(reserved_ip_ocid).data
+
+            if reserved_ip.lifecycle_state == "AVAILABLE":
+                logger.info(f"✅ {t('reserved_ip_found') if LANGUAGE == 'DE' else 'Using reserved IP from config'}: {reserved_ip.ip_address} ({reserved_ip.display_name})")
+                return reserved_ip
+            else:
+                logger.warning(f"⚠️  Reserved IP from config is already assigned: {reserved_ip.ip_address}")
+                logger.info(f"ℹ️  {t('reserved_ip_ephemeral') if LANGUAGE == 'DE' else 'Continuing with ephemeral IP...'}")
+                return None
+
+        except Exception as e:
+            logger.error(f"❌ Could not get reserved IP from config: {str(e)}")
+            logger.info(f"ℹ️  Attempting to find or create a new reserved IP...")
+
+    # Option 2: Find any available reserved IP
+    try:
+        logger.info(f"🔍 {t('reserved_ip_checking') if LANGUAGE == 'DE' else 'Checking for available reserved IPs...'}")
+
+        public_ips = network_client.list_public_ips(
+            scope="REGION",
+            compartment_id=compartment_id,
+            lifetime="RESERVED"
+        ).data
+
+        # Filter for available (unassigned) reserved IPs
+        available_ips = [ip for ip in public_ips if ip.lifecycle_state == "AVAILABLE"]
+
+        if available_ips:
+            reserved_ip = available_ips[0]  # Use the first available one
+            logger.info(f"✅ {t('reserved_ip_found') if LANGUAGE == 'DE' else 'Using existing available reserved IP'}: {reserved_ip.ip_address} ({reserved_ip.display_name})")
+            return reserved_ip
+
+        # If no available IPs found, check if all are assigned
+        if public_ips:
+            logger.warning(f"⚠️  {t('reserved_ip_all_assigned') if LANGUAGE == 'DE' else 'All reserved IPs are currently assigned to instances'}")
+
+    except Exception as e:
+        logger.warning(f"⚠️  Could not check for existing IPs: {str(e)}")
+
+    # Option 3: Create a new reserved IP
     logger.info(f"🔄 {t('reserved_ip_creating')}")
 
     try:
@@ -550,10 +604,12 @@ def create_reserved_ip(
 
         reserved_ip = network_client.create_public_ip(reserved_ip_details).data
         logger.info(f"✅ {t('reserved_ip_created')}: {reserved_ip.ip_address}")
+        logger.info(f"💡 Tip: Add this OCID to config to reuse: {reserved_ip.id}")
         return reserved_ip
 
     except Exception as e:
         logger.error(f"❌ Error creating reserved IP: {str(e)}")
+        logger.info(f"ℹ️  {t('reserved_ip_continuing') if LANGUAGE == 'DE' else 'Continuing with ephemeral IP...'}")
         return None
 
 
@@ -792,7 +848,16 @@ def main():
     reserved_ip_id = None
 
     if RESERVED_PUBLIC_IP:
-        reserved_ip_obj = create_reserved_ip(network_client, COMPARTMENT_ID)
+        # Get reserved IP OCID from config (optional)
+        configured_ip_ocid = CONFIG_FILE.get("reserved_public_ip_ocid", "").strip()
+        if not configured_ip_ocid:
+            configured_ip_ocid = None
+
+        reserved_ip_obj = get_or_create_reserved_ip(
+            network_client,
+            COMPARTMENT_ID,
+            reserved_ip_ocid=configured_ip_ocid
+        )
         if reserved_ip_obj:
             reserved_ip_id = reserved_ip_obj.id
 

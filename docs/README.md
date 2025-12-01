@@ -208,6 +208,7 @@ The interactive control menu makes it easy to manage the sniper script!
 - Retry interval (30/60/120 seconds recommended)
 - Image type (Ubuntu 22.04 / Oracle Linux 8)
 - Language switching (EN/DE)
+- Reserved IP OCID (optional - reuse existing static IPs)
 - Saves to sniper-config.json
 
 1. **Foreground Mode** - Run in terminal, see all output live
@@ -230,6 +231,50 @@ Yes! You can run multiple instances simultaneously:
 - Different regions/configurations ✅
 
 ## 📊 Configuration (Optional)
+
+### Config File: `config/sniper-config.json`
+
+The easiest way to configure the script is through `sniper-config.json`:
+
+```json
+{
+  "instance_name": "oci-instance",
+  "ocpus": 2,
+  "memory_in_gbs": 12,
+  "image": "ubuntu24",
+  "retry_delay_seconds": 60,
+  "max_attempts": 1440,
+  "region": "eu-frankfurt-1",
+  "language": "EN",
+  "reserved_public_ip_ocid": ""
+}
+```
+
+**Reserved IP Configuration (Optional):**
+
+The script intelligently handles reserved IPs with 3 fallback options:
+
+1. **Use Specific IP** (recommended): Add OCID to config
+   ```json
+   "reserved_public_ip_ocid": "ocid1.publicip.oc1.eu-frankfurt-1.ama..."
+   ```
+   → Script will use this exact IP if available
+
+2. **Auto-Find Available IP**: Leave field empty (`""`)
+   → Script automatically finds any available reserved IP in your compartment
+
+3. **Create New IP**: If no IP available
+   → Script creates a new reserved IP (shows OCID for reuse)
+
+**How to get your Reserved IP OCID:**
+```bash
+# List all reserved IPs
+oci network public-ip list --compartment-id <YOUR_COMPARTMENT_ID> --scope REGION --all
+
+# Copy the "id" field from the output
+```
+
+### Alternative: Direct Edit
 
 Edit `oci-instance-sniper.py` if you want to change:
 

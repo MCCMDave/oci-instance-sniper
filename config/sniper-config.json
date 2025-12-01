@@ -6,5 +6,6 @@
   "retry_delay_seconds": 60,
   "max_attempts": 1440,
   "region": "eu-frankfurt-1",
-  "language": "EN"
+  "language": "EN",
+  "reserved_public_ip_ocid": ""
 }
