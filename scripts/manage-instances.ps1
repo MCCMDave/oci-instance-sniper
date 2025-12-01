@@ -19,10 +19,24 @@ param(
     [switch]$StopAll,
 
     [Parameter(Mandatory=$false)]
-    [switch]$Interactive
+    [switch]$Interactive,
+
+    [Parameter(Mandatory=$false)]
+    [switch]$DebugMode
 )
 
 $ErrorActionPreference = "Stop"
+
+# ============================================================================
+# DEBUG LOGGING
+# ============================================================================
+
+function Write-DebugLog($message, $color = "Gray") {
+    if ($DebugMode) {
+        $timestamp = Get-Date -Format "HH:mm:ss"
+        Write-Host "[$timestamp DEBUG] $message" -ForegroundColor $color
+    }
+}
 
 # ============================================================================
 # LANGUAGE SELECTION
@@ -211,15 +225,52 @@ function Test-InstanceRunning($instanceName) {
 
 function Start-Instance($instance) {
     Write-Host ((t "starting") -f $instance.Name) -ForegroundColor Yellow
+    Write-DebugLog "Instance Name: $($instance.Name)" "Cyan"
+    Write-DebugLog "Config Path: $($instance.ConfigPath)" "Cyan"
+    Write-DebugLog "Log Dir: $($instance.LogDir)" "Cyan"
 
     # Set environment variable for config path
     $env:SNIPER_CONFIG_PATH = $instance.ConfigPath
+    Write-DebugLog "Set SNIPER_CONFIG_PATH: $($instance.ConfigPath)" "Green"
 
     # Create log file path
     $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
     $logFile = Join-Path $instance.LogDir "sniper_$timestamp.log"
+    Write-DebugLog "Log File: $logFile" "Cyan"
+
+    # Check if Python is available
+    $pythonCheck = Get-Command python -ErrorAction SilentlyContinue
+    if (-not $pythonCheck) {
+        Write-Host "ERROR: Python not found in PATH!" -ForegroundColor Red
+        Write-DebugLog "Python command not found" "Red"
+        return
+    }
+    Write-DebugLog "Python found: $($pythonCheck.Source)" "Green"
+
+    # Check if script exists
+    if (-not (Test-Path $scriptPath)) {
+        Write-Host "ERROR: Script not found: $scriptPath" -ForegroundColor Red
+        Write-DebugLog "Script path invalid: $scriptPath" "Red"
+        return
+    }
+    Write-DebugLog "Script found: $scriptPath" "Green"
+
+    # Check if config exists
+    if (-not (Test-Path $instance.ConfigPath)) {
+        Write-Host "ERROR: Config not found: $($instance.ConfigPath)" -ForegroundColor Red
+        Write-DebugLog "Config path invalid: $($instance.ConfigPath)" "Red"
+        return
+    }
+    Write-DebugLog "Config found: $($instance.ConfigPath)" "Green"
+
+    # Create log directory if needed
+    if (-not (Test-Path $instance.LogDir)) {
+        New-Item -ItemType Directory -Path $instance.LogDir -Force | Out-Null
+        Write-DebugLog "Created log directory: $($instance.LogDir)" "Yellow"
+    }
 
     # Start Python script in background
+    Write-DebugLog "Creating process..." "Cyan"
     $startInfo = New-Object System.Diagnostics.ProcessStartInfo
     $startInfo.FileName = "python"
     $startInfo.Arguments = "`"$scriptPath`""
@@ -229,6 +280,9 @@ function Start-Instance($instance) {
     $startInfo.UseShellExecute = $false
     $startInfo.CreateNoWindow = $true
     $startInfo.EnvironmentVariables["SNIPER_CONFIG_PATH"] = $instance.ConfigPath
+
+    Write-DebugLog "Command: python `"$scriptPath`"" "Cyan"
+    Write-DebugLog "Working Dir: $projectRoot" "Cyan"
 
     $process = New-Object System.Diagnostics.Process
     $process.StartInfo = $startInfo
@@ -249,9 +303,19 @@ function Start-Instance($instance) {
     Register-ObjectEvent -InputObject $process -EventName OutputDataReceived -Action $outputHandler | Out-Null
     Register-ObjectEvent -InputObject $process -EventName ErrorDataReceived -Action $errorHandler | Out-Null
 
-    $process.Start() | Out-Null
-    $process.BeginOutputReadLine()
-    $process.BeginErrorReadLine()
+    Write-DebugLog "Starting process..." "Yellow"
+    try {
+        $started = $process.Start()
+        Write-DebugLog "Process.Start() returned: $started" "Green"
+        $process.BeginOutputReadLine()
+        $process.BeginErrorReadLine()
+        Write-DebugLog "Process ID: $($process.Id)" "Green"
+        Write-DebugLog "Process HasExited: $($process.HasExited)" "Green"
+    } catch {
+        Write-Host "ERROR: Failed to start process: $_" -ForegroundColor Red
+        Write-DebugLog "Exception: $_" "Red"
+        return
+    }
 
     # Save state
     $state = Get-InstanceState

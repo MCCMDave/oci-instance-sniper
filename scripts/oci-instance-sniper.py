@@ -172,19 +172,17 @@ LANGUAGE = CONFIG_FILE.get("language", None)
 CONFIG_PROFILE = "DEFAULT"
 
 # Instance Configuration
-COMPARTMENT_ID = "ocid1.tenancy.oc1..your_compartment_id_here"  # Your compartment OCID
+COMPARTMENT_ID = "ocid1.tenancy.oc1..aaaaaaaax6rpppokzujbk3fmq2p5kfrhnocam4qj2clhoypvjnpy42szgbmq"  # Your compartment OCID
 AVAILABILITY_DOMAINS = ["AD-1", "AD-2", "AD-3"]  # Try all ADs
 SHAPE = "VM.Standard.A1.Flex"
 OCPUS = CONFIG_FILE.get("ocpus", 2)
 MEMORY_IN_GBS = CONFIG_FILE.get("memory_in_gbs", 12)
 
 # Image Configuration (Ubuntu 24.04)
-IMAGE_ID = (
-    "ocid1.image.oc1.eu-frankfurt-1.your_image_id_here"  # Ubuntu 24.04 image OCID
-)
+IMAGE_ID = "ocid1.image.oc1.eu-frankfurt-1.aaaaaaaakzxxzn5xxewosaxvv5xcptfuvobpg46cgxolvtqox54bzwzdkima"  # Ubuntu 24.04 image OCID
 
 # Networking Configuration
-SUBNET_ID = "ocid1.subnet.oc1.eu-frankfurt-1.your_subnet_id_here"  # Your subnet OCID
+SUBNET_ID = "ocid1.subnet.oc1.eu-frankfurt-1.aaaaaaaad5iiapdcmmqknjkrcrpjortcmohf3b3fxsvbayovkkrpinidg3tq"  # Your subnet OCID
 ASSIGN_PUBLIC_IP = True
 
 # Reserved IP Configuration (NEW in v1.2)
@@ -843,19 +841,36 @@ def main():
 
     # Ask about reserved IP
     logger.info("")
-    logger.info("=" * 80)
-    logger.info(f"ℹ️  {t('reserved_ip_info')}")
-    logger.info(f"ℹ️  {t('reserved_ip_yes')}")
-    logger.info("=" * 80)
+    # Check if Reserved IP OCID is configured in config file
+    configured_ip_ocid = CONFIG_FILE.get("reserved_public_ip_ocid", "").strip()
 
-    RESERVED_PUBLIC_IP = ask_yes_no(t("reserved_ip_prompt"))
+    # Auto-decide based on config: If IP OCID is set, use reserved IP without asking
+    if configured_ip_ocid:
+        RESERVED_PUBLIC_IP = True
+        logger.info("=" * 80)
+        logger.info(f"ℹ️  Using configured reserved IP OCID from config")
+        logger.info("=" * 80)
+    else:
+        # Only ask interactively if no IP OCID is configured and we have a TTY
+        import sys
+        if sys.stdin.isatty():
+            logger.info("=" * 80)
+            logger.info(f"ℹ️  {t('reserved_ip_info')}")
+            logger.info(f"ℹ️  {t('reserved_ip_yes')}")
+            logger.info("=" * 80)
+            RESERVED_PUBLIC_IP = ask_yes_no(t("reserved_ip_prompt"))
+        else:
+            # Non-interactive mode (background): Don't use reserved IP
+            RESERVED_PUBLIC_IP = False
+            logger.info("=" * 80)
+            logger.info(f"ℹ️  Non-interactive mode: Using ephemeral IP")
+            logger.info("=" * 80)
 
     reserved_ip_obj = None
     reserved_ip_id = None
 
     if RESERVED_PUBLIC_IP:
-        # Get reserved IP OCID from config (optional)
-        configured_ip_ocid = CONFIG_FILE.get("reserved_public_ip_ocid", "").strip()
+        # Use the configured_ip_ocid from above (already loaded)
         if not configured_ip_ocid:
             configured_ip_ocid = None
 
