@@ -270,48 +270,54 @@ function Start-Instance($instance) {
         Write-DebugLog "Created log directory: $($instance.LogDir)" "Yellow"
     }
 
-    # Start Python script in background
-    Write-DebugLog "Creating process..." "Cyan"
-    $startInfo = New-Object System.Diagnostics.ProcessStartInfo
-    $startInfo.FileName = "python"
-    $startInfo.Arguments = "`"$scriptPath`""
-    $startInfo.WorkingDirectory = $projectRoot
-    $startInfo.RedirectStandardOutput = $true
-    $startInfo.RedirectStandardError = $true
-    $startInfo.UseShellExecute = $false
-    $startInfo.CreateNoWindow = $true
-    $startInfo.EnvironmentVariables["SNIPER_CONFIG_PATH"] = $instance.ConfigPath
-
+    # Start Python script in background with Start-Process (more reliable than Register-ObjectEvent)
+    Write-DebugLog "Creating process with Start-Process..." "Cyan"
     Write-DebugLog "Command: python `"$scriptPath`"" "Cyan"
     Write-DebugLog "Working Dir: $projectRoot" "Cyan"
+    Write-DebugLog "Config: $($instance.ConfigPath)" "Cyan"
+    Write-DebugLog "Log: $logFile" "Cyan"
 
-    $process = New-Object System.Diagnostics.Process
-    $process.StartInfo = $startInfo
+    # Set environment variable for this session (inherited by child process)
+    $env:SNIPER_CONFIG_PATH = $instance.ConfigPath
+    Write-DebugLog "Set SNIPER_CONFIG_PATH environment variable" "Green"
 
-    # Redirect output to log file
-    $outputHandler = {
-        if (-not [string]::IsNullOrEmpty($EventArgs.Data)) {
-            $EventArgs.Data | Out-File -FilePath $using:logFile -Append -Encoding UTF8
-        }
-    }
-
-    $errorHandler = {
-        if (-not [string]::IsNullOrEmpty($EventArgs.Data)) {
-            $EventArgs.Data | Out-File -FilePath $using:logFile -Append -Encoding UTF8
-        }
-    }
-
-    Register-ObjectEvent -InputObject $process -EventName OutputDataReceived -Action $outputHandler | Out-Null
-    Register-ObjectEvent -InputObject $process -EventName ErrorDataReceived -Action $errorHandler | Out-Null
-
-    Write-DebugLog "Starting process..." "Yellow"
     try {
-        $started = $process.Start()
-        Write-DebugLog "Process.Start() returned: $started" "Green"
-        $process.BeginOutputReadLine()
-        $process.BeginErrorReadLine()
+        # Create a dummy stdin file for non-interactive mode
+        $dummyStdin = Join-Path $instance.LogDir "stdin.txt"
+        "" | Out-File -FilePath $dummyStdin -Force
+
+        # Start process and redirect output (including stdin to prevent TTY detection)
+        $process = Start-Process -FilePath "python" `
+            -ArgumentList "-u `"$scriptPath`"" `
+            -WorkingDirectory $projectRoot `
+            -WindowStyle Hidden `
+            -PassThru `
+            -RedirectStandardInput $dummyStdin `
+            -RedirectStandardOutput $logFile `
+            -RedirectStandardError "$logFile.error"
+
+        Write-DebugLog "Process started successfully!" "Green"
         Write-DebugLog "Process ID: $($process.Id)" "Green"
-        Write-DebugLog "Process HasExited: $($process.HasExited)" "Green"
+
+        # Wait a moment to check if process is stable
+        Start-Sleep -Milliseconds 500
+
+        if ($process.HasExited) {
+            Write-Host "ERROR: Process exited immediately (Exit Code: $($process.ExitCode))" -ForegroundColor Red
+            Write-DebugLog "Process crashed immediately!" "Red"
+
+            # Try to read error log
+            if (Test-Path "$logFile.error") {
+                $errorContent = Get-Content "$logFile.error" -Raw
+                if ($errorContent) {
+                    Write-Host "Error output:" -ForegroundColor Red
+                    Write-Host $errorContent -ForegroundColor Red
+                }
+            }
+            return
+        }
+
+        Write-DebugLog "Process is running stable" "Green"
     } catch {
         Write-Host "ERROR: Failed to start process: $_" -ForegroundColor Red
         Write-DebugLog "Exception: $_" "Red"
