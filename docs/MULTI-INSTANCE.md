@@ -20,7 +20,7 @@ Multi-Instance mode allows you to:
 ### 1. Create Your First Instance
 
 ```powershell
-.\scripts\setup-instance.ps1
+.\scripts\multi\setup-instance.ps1
 ```
 
 The script will ask you:
@@ -42,14 +42,14 @@ Answer **y** to create more instances for different regions!
 
 ```powershell
 # Interactive menu (recommended)
-.\scripts\manage-instances.ps1
+.\scripts\multi\manage-instances.ps1
 
 # Or use direct commands:
-.\scripts\manage-instances.ps1 -Start frankfurt
-.\scripts\manage-instances.ps1 -Status
-.\scripts\manage-instances.ps1 -Logs frankfurt
-.\scripts\manage-instances.ps1 -Stop frankfurt
-.\scripts\manage-instances.ps1 -StopAll
+.\scripts\multi\manage-instances.ps1 -Start frankfurt
+.\scripts\multi\manage-instances.ps1 -Status
+.\scripts\multi\manage-instances.ps1 -Logs frankfurt
+.\scripts\multi\manage-instances.ps1 -Stop frankfurt
+.\scripts\multi\manage-instances.ps1 -StopAll
 ```
 
 ## 📁 Directory Structure
@@ -71,8 +71,9 @@ oci-instance-sniper/
 │       ├── config/
 │       └── logs/
 ├── scripts/
-│   ├── setup-instance.ps1      # Create new instances
-│   ├── manage-instances.ps1    # Control instances
+│   ├── multi/
+│   │   ├── setup-instance.ps1      # Create new instances
+│   │   └── manage-instances.ps1    # Control instances
 │   └── oci-instance-sniper.py
 ```
 
@@ -153,7 +154,7 @@ oci network public-ip list \
 ## 🔍 Status Monitoring
 
 ```powershell
-.\scripts\manage-instances.ps1 -Status
+.\scripts\multi\manage-instances.ps1 -Status
 ```
 
 Output:
@@ -177,7 +178,7 @@ Each instance has its own log directory:
 
 ```powershell
 # View live logs for specific instance
-.\scripts\manage-instances.ps1 -Logs frankfurt
+.\scripts\multi\manage-instances.ps1 -Logs frankfurt
 
 # Or directly with PowerShell
 Get-Content instances\frankfurt\logs\sniper_*.log -Wait -Tail 20
@@ -190,7 +191,7 @@ Creates new instance configurations.
 
 ```powershell
 # Interactive setup
-.\scripts\setup-instance.ps1
+.\scripts\multi\setup-instance.ps1
 
 # The script will guide you through:
 # 1. Instance name
@@ -205,23 +206,23 @@ Manage all your instances from one place.
 
 ```powershell
 # Interactive menu
-.\scripts\manage-instances.ps1
-.\scripts\manage-instances.ps1 -Interactive
+.\scripts\multi\manage-instances.ps1
+.\scripts\multi\manage-instances.ps1 -Interactive
 
 # Start instance
-.\scripts\manage-instances.ps1 -Start frankfurt
+.\scripts\multi\manage-instances.ps1 -Start frankfurt
 
 # Stop instance
-.\scripts\manage-instances.ps1 -Stop frankfurt
+.\scripts\multi\manage-instances.ps1 -Stop frankfurt
 
 # Stop all instances
-.\scripts\manage-instances.ps1 -StopAll
+.\scripts\multi\manage-instances.ps1 -StopAll
 
 # Show status
-.\scripts\manage-instances.ps1 -Status
+.\scripts\multi\manage-instances.ps1 -Status
 
 # View logs (live tail)
-.\scripts\manage-instances.ps1 -Logs frankfurt
+.\scripts\multi\manage-instances.ps1 -Logs frankfurt
 ```
 
 ## 🚀 Real-World Example
@@ -230,7 +231,7 @@ Let's create a 3-region setup:
 
 ```powershell
 # Step 1: Create Frankfurt instance
-.\scripts\setup-instance.ps1
+.\scripts\multi\setup-instance.ps1
 
 # Inputs:
 # Name: frankfurt
@@ -260,11 +261,11 @@ Let's create a 3-region setup:
 # Answer "n" to finish setup
 
 # Step 4: Start all instances
-.\scripts\manage-instances.ps1
+.\scripts\multi\manage-instances.ps1
 # Select option 1 (Start Instance) for each region
 
 # Step 5: Monitor status
-.\scripts\manage-instances.ps1 -Status
+.\scripts\multi\manage-instances.ps1 -Status
 ```
 
 ## ⚠️ Important Notes
@@ -297,7 +298,7 @@ The instance will:
 
 ```powershell
 # Quick stop all
-.\scripts\manage-instances.ps1 -StopAll
+.\scripts\multi\manage-instances.ps1 -StopAll
 ```
 
 ---
@@ -322,7 +323,7 @@ Der Multi-Instance Modus ermöglicht:
 ### 1. Erste Instance erstellen
 
 ```powershell
-.\scripts\setup-instance.ps1
+.\scripts\multi\setup-instance.ps1
 ```
 
 Das Script fragt dich:
@@ -344,14 +345,14 @@ Antworte **j** um weitere Instances für andere Regionen zu erstellen!
 
 ```powershell
 # Interaktives Menü (empfohlen)
-.\scripts\manage-instances.ps1
+.\scripts\multi\manage-instances.ps1
 
 # Oder direkte Befehle:
-.\scripts\manage-instances.ps1 -Start frankfurt
-.\scripts\manage-instances.ps1 -Status
-.\scripts\manage-instances.ps1 -Logs frankfurt
-.\scripts\manage-instances.ps1 -Stop frankfurt
-.\scripts\manage-instances.ps1 -StopAll
+.\scripts\multi\manage-instances.ps1 -Start frankfurt
+.\scripts\multi\manage-instances.ps1 -Status
+.\scripts\multi\manage-instances.ps1 -Logs frankfurt
+.\scripts\multi\manage-instances.ps1 -Stop frankfurt
+.\scripts\multi\manage-instances.ps1 -StopAll
 ```
 
 ## 📊 Beispiel Multi-Region Setup
@@ -409,7 +410,7 @@ Die Instance wird:
 
 ```powershell
 # Schnell alle stoppen
-.\scripts\manage-instances.ps1 -StopAll
+.\scripts\multi\manage-instances.ps1 -StopAll
 ```
 
 ---

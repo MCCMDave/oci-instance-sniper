@@ -66,9 +66,9 @@ $translations = @{
         success = "Instance '{0}' created successfully!"
         location = "Location: {0}"
         next_steps = "Next Steps"
-        step1 = "1. Start instance: .\scripts\manage-instances.ps1 -Start {0}"
-        step2 = "2. Check status: .\scripts\manage-instances.ps1 -Status"
-        step3 = "3. View logs: .\scripts\manage-instances.ps1 -Logs {0}"
+        step1 = "1. Start instance: .\scripts\multi\manage-instances.ps1 -Start {0}"
+        step2 = "2. Check status: .\scripts\multi\manage-instances.ps1 -Status"
+        step3 = "3. View logs: .\scripts\multi\manage-instances.ps1 -Logs {0}"
         create_another = "Create another instance? (y/n)"
         goodbye = "Setup complete. Use manage-instances.ps1 to control your instances."
         press_key = "Press any key to continue..."
@@ -94,9 +94,9 @@ $translations = @{
         success = "Instance '{0}' erfolgreich erstellt!"
         location = "Speicherort: {0}"
         next_steps = "Nächste Schritte"
-        step1 = "1. Instance starten: .\scripts\manage-instances.ps1 -Start {0}"
-        step2 = "2. Status prüfen: .\scripts\manage-instances.ps1 -Status"
-        step3 = "3. Logs ansehen: .\scripts\manage-instances.ps1 -Logs {0}"
+        step1 = "1. Instance starten: .\scripts\multi\manage-instances.ps1 -Start {0}"
+        step2 = "2. Status prüfen: .\scripts\multi\manage-instances.ps1 -Status"
+        step3 = "3. Logs ansehen: .\scripts\multi\manage-instances.ps1 -Logs {0}"
         create_another = "Weitere Instance erstellen? (j/n)"
         goodbye = "Setup abgeschlossen. Nutze manage-instances.ps1 um deine Instances zu steuern."
         press_key = "Beliebige Taste drücken..."
@@ -125,7 +125,8 @@ function Read-SingleKey {
 # ============================================================================
 
 # Project root
-$projectRoot = Split-Path -Parent $PSScriptRoot
+$scriptsDir = Split-Path -Parent $PSScriptRoot
+$projectRoot = Split-Path -Parent $scriptsDir
 $instancesDir = Join-Path $projectRoot "instances"
 
 # Create instances directory if not exists

@@ -165,9 +165,10 @@ function Read-SingleKey {
 # PROJECT PATHS
 # ============================================================================
 
-$projectRoot = Split-Path -Parent $PSScriptRoot
+$scriptsDir = Split-Path -Parent $PSScriptRoot
+$projectRoot = Split-Path -Parent $scriptsDir
 $instancesDir = Join-Path $projectRoot "instances"
-$scriptPath = Join-Path $projectRoot "scripts\oci-instance-sniper.py"
+$scriptPath = Join-Path $scriptsDir "oci-instance-sniper.py"
 $stateFile = Join-Path $projectRoot "instances\.state.json"
 
 # Check if instances exist

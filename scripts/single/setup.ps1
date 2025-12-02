@@ -542,9 +542,10 @@ catch {
 
 Write-Host "`n[5/5] $($s.updating_script)" -ForegroundColor Cyan
 
-# Get parent directory (project root)
-$projectRoot = Split-Path -Parent $PSScriptRoot
-$scriptPath = Join-Path $projectRoot "oci-instance-sniper.py"
+# Get directories
+$scriptsDir = Split-Path -Parent $PSScriptRoot
+$projectRoot = Split-Path -Parent $scriptsDir
+$scriptPath = Join-Path $scriptsDir "oci-instance-sniper.py"
 
 if (-not (Test-Path $scriptPath)) {
     Write-Host "  [ERROR] $($s.script_error) $scriptPath" -ForegroundColor Red

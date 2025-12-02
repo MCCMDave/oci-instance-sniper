@@ -11,10 +11,10 @@ Run multiple regions simultaneously for maximum success!
 
 ```powershell
 # 1. Create instances for different regions
-.\scripts\setup-instance.ps1
+.\scripts\multi\setup-instance.ps1
 
 # 2. Manage all instances
-.\scripts\manage-instances.ps1
+.\scripts\multi\manage-instances.ps1
 ```
 
 **Perfect for:**
@@ -29,10 +29,10 @@ Traditional setup for one region:
 
 ```powershell
 # 1. Setup (one time)
-.\scripts\setup.ps1
+.\scripts\single\setup.ps1
 
 # 2. Run Control Menu
-.\scripts\control-menu.ps1
+.\scripts\single\control-menu.ps1
 ```
 
 The menu lets you:
@@ -44,7 +44,7 @@ The menu lets you:
 ### Option 3: Direct Execution
 ```powershell
 # Run directly in terminal
-python oci-instance-sniper.py
+python scripts\oci-instance-sniper.py
 ```
 
 The script will run for 24 hours, checking every 60 seconds.
@@ -71,12 +71,14 @@ oci-instance-sniper/
 │   ├── MULTI-INSTANCE.md     # Multi-instance guide ⭐ NEW!
 │   ├── README.md             # Full English docs
 │   └── README.de.md          # Full German docs
-├── scripts/                   # Scripts
-│   ├── setup-instance.ps1    # Multi-instance setup ⭐ NEW!
-│   ├── manage-instances.ps1  # Instance manager ⭐ NEW!
-│   ├── setup.ps1             # Single instance setup
-│   ├── control-menu.ps1      # Single instance control
-│   └── oci-instance-sniper.py # Main Python script
+├── scripts/                      # Scripts
+│   ├── multi/                   # Multi-instance mode ⭐ NEW!
+│   │   ├── manage-instances.ps1 # Instance manager
+│   │   └── setup-instance.ps1   # Multi-instance setup
+│   ├── single/                  # Single-instance mode
+│   │   ├── control-menu.ps1     # Control menu
+│   │   └── setup.ps1            # Setup wizard
+│   └── oci-instance-sniper.py   # Main Python script (shared)
 ├── instances/                 # Multi-instance configs ⭐ NEW!
 │   ├── frankfurt/
 │   ├── paris/

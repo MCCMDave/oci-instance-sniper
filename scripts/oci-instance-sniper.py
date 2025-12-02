@@ -539,7 +539,10 @@ def wait_for_instance_running(compute_client, instance_id, network_client, timeo
 
 
 def get_or_create_reserved_ip(
-    network_client, compartment_id, reserved_ip_ocid=None, display_name="oci-reserved-ip"
+    network_client,
+    compartment_id,
+    reserved_ip_ocid=None,
+    display_name="oci-reserved-ip",
 ):
     """Get existing reserved IP by OCID, find available IP, or create a new one
 
@@ -556,15 +559,23 @@ def get_or_create_reserved_ip(
     # Option 1: Use specific IP OCID from config
     if reserved_ip_ocid:
         try:
-            logger.info(f"🔍 {t('reserved_ip_checking') if LANGUAGE == 'DE' else 'Using configured reserved IP OCID...'}")
+            logger.info(
+                f"🔍 {t('reserved_ip_checking') if LANGUAGE == 'DE' else 'Using configured reserved IP OCID...'}"
+            )
             reserved_ip = network_client.get_public_ip(reserved_ip_ocid).data
 
             if reserved_ip.lifecycle_state == "AVAILABLE":
-                logger.info(f"✅ {t('reserved_ip_found') if LANGUAGE == 'DE' else 'Using reserved IP from config'}: {reserved_ip.ip_address} ({reserved_ip.display_name})")
+                logger.info(
+                    f"✅ {t('reserved_ip_found') if LANGUAGE == 'DE' else 'Using reserved IP from config'}: {reserved_ip.ip_address} ({reserved_ip.display_name})"
+                )
                 return reserved_ip
             else:
-                logger.warning(f"⚠️  Reserved IP from config is already assigned: {reserved_ip.ip_address}")
-                logger.info(f"ℹ️  {t('reserved_ip_ephemeral') if LANGUAGE == 'DE' else 'Continuing with ephemeral IP...'}")
+                logger.warning(
+                    f"⚠️  Reserved IP from config is already assigned: {reserved_ip.ip_address}"
+                )
+                logger.info(
+                    f"ℹ️  {t('reserved_ip_ephemeral') if LANGUAGE == 'DE' else 'Continuing with ephemeral IP...'}"
+                )
                 return None
 
         except Exception as e:
@@ -573,12 +584,12 @@ def get_or_create_reserved_ip(
 
     # Option 2: Find any available reserved IP
     try:
-        logger.info(f"🔍 {t('reserved_ip_checking') if LANGUAGE == 'DE' else 'Checking for available reserved IPs...'}")
+        logger.info(
+            f"🔍 {t('reserved_ip_checking') if LANGUAGE == 'DE' else 'Checking for available reserved IPs...'}"
+        )
 
         public_ips = network_client.list_public_ips(
-            scope="REGION",
-            compartment_id=compartment_id,
-            lifetime="RESERVED"
+            scope="REGION", compartment_id=compartment_id, lifetime="RESERVED"
         ).data
 
         # Filter for available (unassigned) reserved IPs
@@ -586,12 +597,16 @@ def get_or_create_reserved_ip(
 
         if available_ips:
             reserved_ip = available_ips[0]  # Use the first available one
-            logger.info(f"✅ {t('reserved_ip_found') if LANGUAGE == 'DE' else 'Using existing available reserved IP'}: {reserved_ip.ip_address} ({reserved_ip.display_name})")
+            logger.info(
+                f"✅ {t('reserved_ip_found') if LANGUAGE == 'DE' else 'Using existing available reserved IP'}: {reserved_ip.ip_address} ({reserved_ip.display_name})"
+            )
             return reserved_ip
 
         # If no available IPs found, check if all are assigned
         if public_ips:
-            logger.warning(f"⚠️  {t('reserved_ip_all_assigned') if LANGUAGE == 'DE' else 'All reserved IPs are currently assigned to instances'}")
+            logger.warning(
+                f"⚠️  {t('reserved_ip_all_assigned') if LANGUAGE == 'DE' else 'All reserved IPs are currently assigned to instances'}"
+            )
 
     except Exception as e:
         logger.warning(f"⚠️  Could not check for existing IPs: {str(e)}")
@@ -613,7 +628,9 @@ def get_or_create_reserved_ip(
 
     except Exception as e:
         logger.error(f"❌ Error creating reserved IP: {str(e)}")
-        logger.info(f"ℹ️  {t('reserved_ip_continuing') if LANGUAGE == 'DE' else 'Continuing with ephemeral IP...'}")
+        logger.info(
+            f"ℹ️  {t('reserved_ip_continuing') if LANGUAGE == 'DE' else 'Continuing with ephemeral IP...'}"
+        )
         return None
 
 
@@ -853,6 +870,7 @@ def main():
     else:
         # Only ask interactively if no IP OCID is configured and we have a TTY
         import sys
+
         if sys.stdin.isatty():
             logger.info("=" * 80)
             logger.info(f"ℹ️  {t('reserved_ip_info')}")
@@ -875,9 +893,7 @@ def main():
             configured_ip_ocid = None
 
         reserved_ip_obj = get_or_create_reserved_ip(
-            network_client,
-            COMPARTMENT_ID,
-            reserved_ip_ocid=configured_ip_ocid
+            network_client, COMPARTMENT_ID, reserved_ip_ocid=configured_ip_ocid
         )
         if reserved_ip_obj:
             reserved_ip_id = reserved_ip_obj.id
@@ -897,7 +913,9 @@ def main():
 
             # Try each availability domain
             for ad in full_ad_names:
-                success, instance = try_create_instance(compute_client, ad, reserved_ip_id)
+                success, instance = try_create_instance(
+                    compute_client, ad, reserved_ip_id
+                )
 
                 if success:
                     # Wait for instance to be RUNNING
@@ -959,10 +977,14 @@ def main():
 
             # Wait before next attempt
             if attempt < MAX_ATTEMPTS:
-                logger.info(t("waiting_before_retry").format(seconds=RETRY_DELAY_SECONDS))
+                logger.info(
+                    t("waiting_before_retry").format(seconds=RETRY_DELAY_SECONDS)
+                )
                 time.sleep(RETRY_DELAY_SECONDS)
 
-        logger.warning(f"\n❌ {t('max_attempts_reached').format(attempts=MAX_ATTEMPTS)}")
+        logger.warning(
+            f"\n❌ {t('max_attempts_reached').format(attempts=MAX_ATTEMPTS)}"
+        )
         logger.info(t("script_can_restart"))
         return 1
 
