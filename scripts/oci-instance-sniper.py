@@ -47,6 +47,7 @@ import smtplib
 import subprocess
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -61,6 +62,12 @@ try:
         retry_if_exception_type,
         before_sleep_log,
     )
+    # Optional: python-dotenv for .env file support
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()  # Load .env file if it exists
+    except ImportError:
+        pass  # python-dotenv not installed, skip .env loading
 except ImportError as e:
     missing_module = str(e).split("'")[1]
     print(f"Missing dependency: {missing_module}")
@@ -171,18 +178,18 @@ LANGUAGE = CONFIG_FILE.get("language", None)
 # OCI Configuration (will be loaded from ~/.oci/config)
 CONFIG_PROFILE = "DEFAULT"
 
-# Instance Configuration
-COMPARTMENT_ID = "ocid1.tenancy.oc1..aaaaaaaax6rpppokzujbk3fmq2p5kfrhnocam4qj2clhoypvjnpy42szgbmq"  # Your compartment OCID
+# Instance Configuration (can be overridden via .env file)
+COMPARTMENT_ID = os.getenv("OCI_COMPARTMENT_ID", "ocid1.tenancy.oc1..aaaaaaaax6rpppokzujbk3fmq2p5kfrhnocam4qj2clhoypvjnpy42szgbmq")
 AVAILABILITY_DOMAINS = ["AD-1", "AD-2", "AD-3"]  # Try all ADs
 SHAPE = "VM.Standard.A1.Flex"
 OCPUS = CONFIG_FILE.get("ocpus", 2)
 MEMORY_IN_GBS = CONFIG_FILE.get("memory_in_gbs", 12)
 
-# Image Configuration (Ubuntu 24.04)
-IMAGE_ID = "ocid1.image.oc1.eu-frankfurt-1.aaaaaaaakzxxzn5xxewosaxvv5xcptfuvobpg46cgxolvtqox54bzwzdkima"  # Ubuntu 24.04 image OCID
+# Image Configuration (Ubuntu 24.04, can be overridden via .env file)
+IMAGE_ID = os.getenv("OCI_IMAGE_ID", "ocid1.image.oc1.eu-frankfurt-1.aaaaaaaakzxxzn5xxewosaxvv5xcptfuvobpg46cgxolvtqox54bzwzdkima")
 
-# Networking Configuration
-SUBNET_ID = "ocid1.subnet.oc1.eu-frankfurt-1.aaaaaaaad5iiapdcmmqknjkrcrpjortcmohf3b3fxsvbayovkkrpinidg3tq"  # Your subnet OCID
+# Networking Configuration (can be overridden via .env file)
+SUBNET_ID = os.getenv("OCI_SUBNET_ID", "ocid1.subnet.oc1.eu-frankfurt-1.aaaaaaaad5iiapdcmmqknjkrcrpjortcmohf3b3fxsvbayovkkrpinidg3tq")
 ASSIGN_PUBLIC_IP = True
 
 # Reserved IP Configuration (NEW in v1.2)
@@ -191,8 +198,46 @@ ASSIGN_PUBLIC_IP = True
 # You will be asked interactively when running the script
 RESERVED_PUBLIC_IP = None  # Will be set during runtime
 
-# SSH Key (paste your public key here)
-SSH_PUBLIC_KEY = """your_ssh_public_key_here"""
+
+# ============================================================================
+# SSH KEY AUTO-LOADING
+# ============================================================================
+def load_ssh_key():
+    """
+    Load SSH public key from multiple sources (priority order):
+    1. Environment variable SSH_PUBLIC_KEY
+    2. ~/.ssh/id_rsa.pub (default RSA key)
+    3. ~/.ssh/id_ed25519.pub (Ed25519 key)
+    4. Hardcoded fallback
+    """
+    # Try environment variable first
+    env_key = os.getenv("SSH_PUBLIC_KEY")
+    if env_key and len(env_key.strip()) > 100:
+        return env_key.strip()
+
+    # Try default SSH key locations
+    ssh_key_paths = [
+        os.path.expanduser("~/.ssh/id_rsa.pub"),
+        os.path.expanduser("~/.ssh/id_ed25519.pub"),
+        os.path.expanduser("~/.ssh/id_ecdsa.pub"),
+    ]
+
+    for key_path in ssh_key_paths:
+        if os.path.exists(key_path):
+            try:
+                with open(key_path, "r", encoding="utf-8") as f:
+                    key_content = f.read().strip()
+                    if len(key_content) > 100:  # Valid SSH key
+                        return key_content
+            except Exception:
+                continue  # Try next path
+
+    # Fallback to hardcoded value
+    return "your_ssh_public_key_here"
+
+
+# SSH Key (auto-loaded from ~/.ssh/*.pub or environment variable)
+SSH_PUBLIC_KEY = load_ssh_key()
 
 # Retry Configuration
 RETRY_DELAY_SECONDS = CONFIG_FILE.get(
@@ -388,11 +433,21 @@ if sys.platform == "win32":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
+# Log rotation: max 5 MB per file, keep 3 backup files
+from logging.handlers import RotatingFileHandler
+
+log_handler = RotatingFileHandler(
+    "oci-sniper.log",
+    maxBytes=5 * 1024 * 1024,  # 5 MB
+    backupCount=3,  # Keep 3 old logs (oci-sniper.log.1, .2, .3)
+    encoding="utf-8"
+)
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.FileHandler("oci-sniper.log", encoding="utf-8"),
+        log_handler,
         logging.StreamHandler(sys.stdout),
     ],
 )
@@ -766,16 +821,20 @@ def validate_configuration():
     if "your_subnet_id_here" in SUBNET_ID:
         errors.append("SUBNET_ID is not configured")
 
-    # Check SSH key
+    # Check SSH key with helpful examples
     if (
         "your_ssh_public_key_here" in SSH_PUBLIC_KEY
         or len(SSH_PUBLIC_KEY.strip()) < 100
     ):
         errors.append("SSH_PUBLIC_KEY is not configured")
+        errors.append("  → Example: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQ... user@host")
+        errors.append("  → Generate new key: ssh-keygen -t rsa -b 4096")
+        errors.append("  → Or use existing: cat ~/.ssh/id_rsa.pub")
     elif not validate_ssh_key(SSH_PUBLIC_KEY):
         errors.append(
             "SSH_PUBLIC_KEY has invalid format (must be ssh-rsa, ssh-ed25519, or ecdsa-sha2-*)"
         )
+        errors.append("  → Ensure the key starts with 'ssh-rsa', 'ssh-ed25519', or 'ecdsa-sha2-nistp256'")
 
     # Validate OCID format
     if not COMPARTMENT_ID.startswith("ocid1."):
@@ -900,85 +959,140 @@ def main():
 
     # Main retry loop with Ctrl+C handling
     attempt = 0
+    start_time = datetime.now()
+
     try:
         while attempt < MAX_ATTEMPTS:
             attempt += 1
+
+            # Calculate dynamic retry delay (exponential backoff)
+            if attempt <= 10:
+                retry_delay = 10  # Fast retry first 10 attempts (10s)
+            elif attempt <= 30:
+                retry_delay = 30  # Medium retry next 20 attempts (30s)
+            else:
+                retry_delay = RETRY_DELAY_SECONDS  # Normal retry after that (60s)
+
+            # Calculate progress and ETA
+            elapsed_time = (datetime.now() - start_time).total_seconds()
+            progress_pct = (attempt / MAX_ATTEMPTS) * 100
+            avg_time_per_attempt = elapsed_time / attempt if attempt > 0 else 0
+            remaining_attempts = MAX_ATTEMPTS - attempt
+            eta_seconds = remaining_attempts * avg_time_per_attempt
+            eta = datetime.now() + timedelta(seconds=eta_seconds) if eta_seconds > 0 else None
+
             logger.info(f"\n{'='*80}")
             logger.info(
-                f"{t('attempt')} {attempt}/{MAX_ATTEMPTS} - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                f"{t('attempt')} {attempt}/{MAX_ATTEMPTS} ({progress_pct:.1f}%) - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
             )
+            if eta:
+                logger.info(f"⏱️  Running: {elapsed_time/3600:.1f}h | ETA: {eta.strftime('%H:%M')}")
             logger.info(f"{'='*80}")
 
-            # Try each availability domain
-            for ad in full_ad_names:
-                success, instance = try_create_instance(
-                    compute_client, ad, reserved_ip_id
+            # Try availability domains in parallel (max 3 workers for 3 ADs)
+            success = False
+            instance = None
+
+            with ThreadPoolExecutor(max_workers=min(3, len(full_ad_names))) as executor:
+                # Submit all AD attempts concurrently
+                future_to_ad = {
+                    executor.submit(try_create_instance, compute_client, ad, reserved_ip_id): ad
+                    for ad in full_ad_names
+                }
+
+                # Process results as they complete
+                for future in as_completed(future_to_ad):
+                    ad = future_to_ad[future]
+                    try:
+                        ad_success, ad_instance = future.result()
+                        if ad_success:
+                            success = True
+                            instance = ad_instance
+                            # Cancel remaining futures
+                            for f in future_to_ad:
+                                f.cancel()
+                            break
+                    except Exception as e:
+                        logger.error(f"❌ Exception in parallel AD check for {ad}: {str(e)}")
+
+            if success:
+                # Wait for instance to be RUNNING
+                instance, public_ip, private_ip = wait_for_instance_running(
+                    compute_client, instance.id, network_client
                 )
 
-                if success:
-                    # Wait for instance to be RUNNING
-                    instance, public_ip, private_ip = wait_for_instance_running(
-                        compute_client, instance.id, network_client
-                    )
+                # If reserved IP was created but no public IP from VNIC, use reserved IP
+                if not public_ip and reserved_ip_obj:
+                    public_ip = reserved_ip_obj.ip_address
 
-                    # If reserved IP was created but no public IP from VNIC, use reserved IP
-                    if not public_ip and reserved_ip_obj:
-                        public_ip = reserved_ip_obj.ip_address
+                logger.info("\n" + "=" * 80)
+                logger.info(f"🎉 {t('instance_created_title')}")
+                logger.info("=" * 80)
+                logger.info(f"{t('instance_details')}:")
+                logger.info(f"  - Name: {instance.display_name}")
+                logger.info(f"  - OCID: {instance.id}")
+                logger.info(
+                    f"  - {t('availability_domains')}: {instance.availability_domain}"
+                )
+                logger.info(f"  - Shape: {instance.shape}")
+                logger.info(f"  - State: {instance.lifecycle_state}")
 
-                    logger.info("\n" + "=" * 80)
-                    logger.info(f"🎉 {t('instance_created_title')}")
-                    logger.info("=" * 80)
-                    logger.info(f"{t('instance_details')}:")
-                    logger.info(f"  - Name: {instance.display_name}")
-                    logger.info(f"  - OCID: {instance.id}")
-                    logger.info(
-                        f"  - {t('availability_domains')}: {instance.availability_domain}"
-                    )
-                    logger.info(f"  - Shape: {instance.shape}")
-                    logger.info(f"  - State: {instance.lifecycle_state}")
-
-                    if public_ip:
-                        logger.info("")
-                        logger.info("=" * 80)
-                        logger.info(f"🌐 {t('ssh_connection_info')}")
-                        logger.info("=" * 80)
-                        logger.info(f"{t('public_ip')}: {public_ip}")
-                        if private_ip:
-                            logger.info(f"{t('private_ip')}: {private_ip}")
-                        logger.info("")
-                        logger.info(f"{t('ssh_command')}:")
-                        logger.info(f"  ssh ubuntu@{public_ip}")
-                        logger.info("")
-                        logger.info("First-time connection (auto-accepts fingerprint):")
-                        logger.info(
-                            f"  ssh -o StrictHostKeyChecking=accept-new ubuntu@{public_ip}"
-                        )
-                        logger.info("=" * 80)
-
-                        # Generate SSH config
-                        generate_ssh_config(public_ip, instance.display_name)
-
-                        # Send email notification
-                        send_email_notification(instance, public_ip, private_ip)
-
+                if public_ip:
                     logger.info("")
-                    logger.info(f"{t('next_steps')}:")
-                    logger.info(f"{t('step_1')}")
-                    logger.info(f"{t('step_2')}")
-                    logger.info(f"{t('step_3')}")
-                    logger.info(f"{t('step_4')}")
                     logger.info("=" * 80)
-                    return 0
+                    logger.info(f"🌐 {t('ssh_connection_info')}")
+                    logger.info("=" * 80)
+                    logger.info(f"{t('public_ip')}: {public_ip}")
+                    if private_ip:
+                        logger.info(f"{t('private_ip')}: {private_ip}")
+                    logger.info("")
+                    logger.info(f"{t('ssh_command')}:")
+                    logger.info(f"  ssh ubuntu@{public_ip}")
+                    logger.info("")
+                    logger.info("First-time connection (auto-accepts fingerprint):")
+                    logger.info(
+                        f"  ssh -o StrictHostKeyChecking=accept-new ubuntu@{public_ip}"
+                    )
+                    logger.info("=" * 80)
 
-                # Small delay between AD attempts
-                time.sleep(2)
+                    # Generate SSH config
+                    generate_ssh_config(public_ip, instance.display_name)
 
-            # Wait before next attempt
+                    # Send email notification
+                    send_email_notification(instance, public_ip, private_ip)
+
+                    # Windows Desktop Notification
+                    try:
+                        if sys.platform == "win32":
+                            from win10toast import ToastNotifier
+                            toaster = ToastNotifier()
+                            toaster.show_toast(
+                                "OCI Instance Ready!",
+                                f"Instance created: {public_ip}\nSSH: ssh ubuntu@{public_ip}",
+                                duration=15,
+                                icon_path=None,
+                                threaded=True
+                            )
+                    except ImportError:
+                        pass  # win10toast not installed, skip notification
+                    except Exception as e:
+                        logger.debug(f"Desktop notification failed: {str(e)}")
+
+                logger.info("")
+                logger.info(f"{t('next_steps')}:")
+                logger.info(f"{t('step_1')}")
+                logger.info(f"{t('step_2')}")
+                logger.info(f"{t('step_3')}")
+                logger.info(f"{t('step_4')}")
+                logger.info("=" * 80)
+                return 0
+
+            # Wait before next attempt (dynamic delay)
             if attempt < MAX_ATTEMPTS:
                 logger.info(
-                    t("waiting_before_retry").format(seconds=RETRY_DELAY_SECONDS)
+                    t("waiting_before_retry").format(seconds=retry_delay)
                 )
-                time.sleep(RETRY_DELAY_SECONDS)
+                time.sleep(retry_delay)
 
         logger.warning(
             f"\n❌ {t('max_attempts_reached').format(attempts=MAX_ATTEMPTS)}"
