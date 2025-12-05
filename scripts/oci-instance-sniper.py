@@ -869,8 +869,6 @@ def main():
         logger.info("=" * 80)
     else:
         # Only ask interactively if no IP OCID is configured and we have a TTY
-        import sys
-
         if sys.stdin.isatty():
             logger.info("=" * 80)
             logger.info(f"ℹ️  {t('reserved_ip_info')}")
