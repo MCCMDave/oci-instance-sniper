@@ -1064,17 +1064,29 @@ def main():
                     # Windows Desktop Notification
                     try:
                         if sys.platform == "win32":
-                            from win10toast import ToastNotifier
-                            toaster = ToastNotifier()
-                            toaster.show_toast(
-                                "OCI Instance Ready!",
-                                f"Instance created: {public_ip}\nSSH: ssh ubuntu@{public_ip}",
-                                duration=15,
-                                icon_path=None,
-                                threaded=True
-                            )
+                            try:
+                                # Try winotify first (modern, Python 3.13 compatible)
+                                from winotify import Notification, audio
+                                toast = Notification(
+                                    app_id="OCI Instance Sniper",
+                                    title="OCI Instance Ready!",
+                                    msg=f"Instance created: {public_ip}\nSSH: ssh ubuntu@{public_ip}",
+                                    duration="long"
+                                )
+                                toast.set_audio(audio.Default, loop=False)
+                                toast.show()
+                            except ImportError:
+                                # Fallback to win10toast (older, may not work on Python 3.13+)
+                                from win10toast import ToastNotifier
+                                toaster = ToastNotifier()
+                                toaster.show_toast(
+                                    "OCI Instance Ready!",
+                                    f"Instance created: {public_ip}",
+                                    duration=15,
+                                    threaded=True
+                                )
                     except ImportError:
-                        pass  # win10toast not installed, skip notification
+                        pass  # No notification library installed
                     except Exception as e:
                         logger.debug(f"Desktop notification failed: {str(e)}")
 
