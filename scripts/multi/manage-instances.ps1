@@ -1,4 +1,4 @@
-# OCI Instance Sniper - Multi-Instance Manager
+﻿# OCI Instance Sniper - Multi-Instance Manager
 # Start, stop, and monitor multiple instance configurations
 
 [CmdletBinding()]
