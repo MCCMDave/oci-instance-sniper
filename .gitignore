@@ -29,10 +29,13 @@ oci-config.json
 *.pem
 *.key
 
-# Logs
+# Logs (including rotated logs)
 *.log
+*.log.*
 oci-sniper.log
+oci-sniper.log.*
 control-menu.log
+control-menu.log.*
 
 # SSH Config (generated)
 ssh-config-oci.txt
