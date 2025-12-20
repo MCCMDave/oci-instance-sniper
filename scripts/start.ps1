@@ -3,9 +3,108 @@ $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ProjectRoot = Split-Path -Parent $ScriptDir
 
-# Regionen laden
+# Config laden
+$configFile = Join-Path $ProjectRoot "config\sniper-config.json"
 $regionsFile = Join-Path $ProjectRoot "config\regions.json"
+$config = Get-Content $configFile -Raw | ConvertFrom-Json
 $regionsData = Get-Content $regionsFile -Raw | ConvertFrom-Json
+
+# ============================================
+# HELPER
+# ============================================
+function Get-Key {
+    $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    return $key.Character
+}
+
+# ============================================
+# SSH KEY CHECK
+# ============================================
+function Ensure-SshKey {
+    # Bereits in Config?
+    if ($config.ssh_public_key -and $config.ssh_public_key.Length -gt 100) {
+        $env:SSH_PUBLIC_KEY = $config.ssh_public_key
+        return $true
+    }
+
+    # Standard SSH-Key Pfade pruefen
+    $sshPaths = @(
+        (Join-Path $env:USERPROFILE ".ssh\oracle-ssh.pub"),
+        (Join-Path $env:USERPROFILE ".ssh\id_rsa.pub"),
+        (Join-Path $env:USERPROFILE ".ssh\id_ed25519.pub"),
+        (Join-Path $env:USERPROFILE ".ssh\id_ecdsa.pub")
+    )
+
+    foreach ($path in $sshPaths) {
+        if (Test-Path $path) {
+            $key = (Get-Content $path -Raw).Trim()
+            if ($key.Length -gt 100) {
+                # In Config speichern
+                $config | Add-Member -NotePropertyName "ssh_public_key" -NotePropertyValue $key -Force
+                $config | ConvertTo-Json -Depth 3 | Set-Content $configFile -Encoding UTF8
+                $env:SSH_PUBLIC_KEY = $key
+                Write-Host "  [OK] SSH-Key geladen: $path" -ForegroundColor Green
+                Start-Sleep -Seconds 1
+                return $true
+            }
+        }
+    }
+
+    # Kein Key gefunden - interaktiv abfragen
+    Clear-Host
+    Write-Host ""
+    Write-Host "  ============================================" -ForegroundColor Yellow
+    Write-Host "    SSH Public Key nicht gefunden!" -ForegroundColor Yellow
+    Write-Host "  ============================================" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "  [1] Key generieren (ssh-keygen)" -ForegroundColor Yellow
+    Write-Host "  [2] Key manuell eingeben" -ForegroundColor Yellow
+    Write-Host "  [0] Abbrechen" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "  Auswahl: " -NoNewline
+
+    $choice = Get-Key
+    Write-Host $choice
+
+    switch ($choice) {
+        "1" {
+            $keyPath = Join-Path $env:USERPROFILE ".ssh\id_rsa"
+            Write-Host ""
+            Write-Host "  Generiere SSH-Key..." -ForegroundColor Cyan
+            & ssh-keygen -t rsa -b 4096 -f $keyPath -N '""'
+
+            if (Test-Path "$keyPath.pub") {
+                $key = (Get-Content "$keyPath.pub" -Raw).Trim()
+                $config | Add-Member -NotePropertyName "ssh_public_key" -NotePropertyValue $key -Force
+                $config | ConvertTo-Json -Depth 3 | Set-Content $configFile -Encoding UTF8
+                $env:SSH_PUBLIC_KEY = $key
+                Write-Host "  [OK] SSH-Key generiert!" -ForegroundColor Green
+                Start-Sleep -Seconds 2
+                return $true
+            }
+        }
+        "2" {
+            Write-Host ""
+            Write-Host "  Paste SSH Public Key (ssh-rsa AAAA...):" -ForegroundColor Cyan
+            Write-Host ""
+            $key = Read-Host "  Key"
+
+            if ($key.Length -gt 100 -and $key -match "^ssh-(rsa|ed25519)|^ecdsa-") {
+                $config | Add-Member -NotePropertyName "ssh_public_key" -NotePropertyValue $key -Force
+                $config | ConvertTo-Json -Depth 3 | Set-Content $configFile -Encoding UTF8
+                $env:SSH_PUBLIC_KEY = $key
+                Write-Host "  [OK] SSH-Key gespeichert!" -ForegroundColor Green
+                Start-Sleep -Seconds 2
+                return $true
+            } else {
+                Write-Host "  [FEHLER] Ungueltiger Key!" -ForegroundColor Red
+                Start-Sleep -Seconds 2
+            }
+        }
+    }
+
+    return $false
+}
 
 # Konfigurierte Regionen als Array
 $configuredRegions = @()
@@ -19,11 +118,6 @@ foreach ($prop in $regionsData.PSObject.Properties) {
             compartment_id = $prop.Value.compartment_id
         }
     }
-}
-
-function Get-Key {
-    $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-    return $key.Character
 }
 
 function Show-MainMenu {
@@ -229,6 +323,12 @@ function Setup-Region {
             }
         }
     }
+}
+
+# SSH-Key pruefen vor Start
+if (-not (Ensure-SshKey)) {
+    Write-Host "  Kein SSH-Key konfiguriert. Beende." -ForegroundColor Red
+    exit 1
 }
 
 # Hauptschleife
