@@ -9,6 +9,14 @@ $ProjectRoot = Split-Path -Parent $ScriptDir
 function Write-Header { param($text) Write-Host "`n$('=' * 60)" -ForegroundColor Cyan; Write-Host "  $text" -ForegroundColor Cyan; Write-Host "$('=' * 60)`n" -ForegroundColor Cyan }
 function Write-Option { param($num, $text, $info) Write-Host "  [$num] " -NoNewline -ForegroundColor Yellow; Write-Host "$text" -NoNewline; if ($info) { Write-Host " - $info" -ForegroundColor DarkGray } else { Write-Host "" } }
 
+# Single-Key Input
+function Get-SingleKey {
+    Write-Host "  Auswahl: " -NoNewline -ForegroundColor White
+    $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    Write-Host $key.Character
+    return $key.Character
+}
+
 # Regionen laden
 $regionsFile = Join-Path $ProjectRoot "config\regions.json"
 $regions = Get-Content $regionsFile -Raw | ConvertFrom-Json
@@ -42,9 +50,10 @@ function Show-Menu {
 
     Write-Host ""
     Write-Host "  ----------------------------------------" -ForegroundColor DarkGray
-    Write-Option "A" "Alle Regionen gleichzeitig" "(parallel)"
-    Write-Option "L" "Logs anzeigen"
-    Write-Option "S" "Setup neue Region"
+    $nextNum = $configuredRegions.Count + 1
+    Write-Option $nextNum "Alle Regionen gleichzeitig" "(parallel)"
+    Write-Option ($nextNum + 1) "Logs anzeigen"
+    Write-Option ($nextNum + 2) "Setup neue Region"
     Write-Option "0" "Beenden"
     Write-Host ""
 }
@@ -117,8 +126,9 @@ function Show-Logs {
     }
     Write-Host ""
 
-    $choice = Read-Host "  Log oeffnen (oder 0 fuer Abbruch)"
-    if ($choice -eq "0" -or $choice -eq "") { return }
+    Write-Option "0" "Zurueck"
+    $choice = Get-SingleKey
+    if ($choice -eq "0") { return }
 
     $idx = [int]$choice - 1
     if ($idx -ge 0 -and $idx -lt $logs.Count) {
@@ -156,8 +166,9 @@ function Setup-Region {
     }
     Write-Host ""
 
-    $choice = Read-Host "  Auswahl (oder 0 fuer Abbruch)"
-    if ($choice -eq "0" -or $choice -eq "") { return }
+    Write-Option "0" "Abbrechen"
+    $choice = Get-SingleKey
+    if ($choice -eq "0") { return }
 
     $idx = [int]$choice - 1
     if ($idx -lt 0 -or $idx -ge $unconfigured.Count) { return }
@@ -211,29 +222,36 @@ function Setup-Region {
 # Hauptschleife
 while ($true) {
     Show-Menu
-    $choice = Read-Host "  Auswahl"
+    $choice = Get-SingleKey
 
-    switch ($choice.ToUpper()) {
-        "0" { exit }
-        "A" { Start-AllRegions }
-        "L" { Show-Logs }
-        "S" { Setup-Region }
-        default {
-            $idx = [int]$choice - 1
-            if ($idx -ge 0 -and $idx -lt $configuredRegions.Count) {
-                $region = $configuredRegions[$idx]
-                Write-Host ""
-                Write-Option "1" "Vordergrund" "(sichtbar, Ctrl+C zum Stoppen)"
-                Write-Option "2" "Hintergrund" "(versteckt, Log-Datei)"
-                $mode = Read-Host "`n  Modus"
+    $allIdx = $configuredRegions.Count + 1
+    $logsIdx = $configuredRegions.Count + 2
+    $setupIdx = $configuredRegions.Count + 3
 
-                if ($mode -eq "2") {
-                    Start-Sniper -Region $region -Background
-                    Write-Host "`n  Druecke eine Taste..." -ForegroundColor DarkGray
-                    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-                } else {
-                    Start-Sniper -Region $region
-                }
+    if ($choice -eq "0") {
+        exit
+    } elseif ($choice -eq [string]$allIdx) {
+        Start-AllRegions
+    } elseif ($choice -eq [string]$logsIdx) {
+        Show-Logs
+    } elseif ($choice -eq [string]$setupIdx) {
+        Setup-Region
+    } else {
+        $idx = [int]$choice - 1
+        if ($idx -ge 0 -and $idx -lt $configuredRegions.Count) {
+            $region = $configuredRegions[$idx]
+            Write-Host ""
+            Write-Option "1" "Vordergrund" "(sichtbar, Ctrl+C zum Stoppen)"
+            Write-Option "2" "Hintergrund" "(versteckt, Log-Datei)"
+            Write-Option "0" "Abbrechen"
+            $mode = Get-SingleKey
+
+            if ($mode -eq "1") {
+                Start-Sniper -Region $region
+            } elseif ($mode -eq "2") {
+                Start-Sniper -Region $region -Background
+                Write-Host "`n  Druecke eine Taste..." -ForegroundColor DarkGray
+                $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
             }
         }
     }
