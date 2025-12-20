@@ -418,10 +418,11 @@ def select_language():
 
 # Configure UTF-8 encoding for Windows console
 if sys.platform == "win32":
+    # Set console output to UTF-8
+    os.system("chcp 65001 >nul 2>&1")
     import io
-
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 # Log rotation: max 5 MB per file, keep 3 backup files
 from logging.handlers import RotatingFileHandler
@@ -438,12 +439,16 @@ log_handler = RotatingFileHandler(
     encoding="utf-8"
 )
 
+# Console handler with UTF-8 stream
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
         log_handler,
-        logging.StreamHandler(sys.stdout),
+        console_handler,
     ],
 )
 logger = logging.getLogger(__name__)
@@ -593,14 +598,16 @@ def get_or_create_reserved_ip(
     compartment_id,
     reserved_ip_ocid=None,
     display_name="oci-reserved-ip",
+    create_if_missing=True,
 ):
-    """Get existing reserved IP by OCID, find available IP, or create a new one
+    """Get existing reserved IP by OCID or find available IP in compartment
 
     Args:
         network_client: OCI VirtualNetworkClient
         compartment_id: Compartment OCID
         reserved_ip_ocid: Optional OCID of existing reserved IP to use
         display_name: Name for newly created IP
+        create_if_missing: If False, don't create new IP - only use existing
 
     Returns:
         Reserved IP object or None
@@ -630,9 +637,8 @@ def get_or_create_reserved_ip(
 
         except Exception as e:
             logger.error(f"❌ Could not get reserved IP from config: {str(e)}")
-            logger.info(f"ℹ️  Attempting to find or create a new reserved IP...")
 
-    # Option 2: Find any available reserved IP
+    # Option 2: Find any available reserved IP in compartment
     try:
         logger.info(
             f"🔍 {t('reserved_ip_checking') if LANGUAGE == 'DE' else 'Checking for available reserved IPs...'}"
@@ -648,20 +654,30 @@ def get_or_create_reserved_ip(
         if available_ips:
             reserved_ip = available_ips[0]  # Use the first available one
             logger.info(
-                f"✅ {t('reserved_ip_found') if LANGUAGE == 'DE' else 'Using existing available reserved IP'}: {reserved_ip.ip_address} ({reserved_ip.display_name})"
+                f"✅ {t('reserved_ip_found') if LANGUAGE == 'DE' else 'Found existing reserved IP'}: {reserved_ip.ip_address} ({reserved_ip.display_name})"
             )
             return reserved_ip
 
-        # If no available IPs found, check if all are assigned
+        # If no available IPs found
         if public_ips:
-            logger.warning(
-                f"⚠️  {t('reserved_ip_all_assigned') if LANGUAGE == 'DE' else 'All reserved IPs are currently assigned to instances'}"
+            logger.info(
+                f"ℹ️  {t('reserved_ip_all_assigned') if LANGUAGE == 'DE' else 'All reserved IPs are currently assigned'}"
+            )
+        else:
+            logger.info(
+                f"ℹ️  Keine reservierte IP gefunden" if LANGUAGE == 'DE' else "ℹ️  No reserved IPs found"
             )
 
     except Exception as e:
         logger.warning(f"⚠️  Could not check for existing IPs: {str(e)}")
 
-    # Option 3: Create a new reserved IP
+    # Option 3: Create a new reserved IP (only if allowed)
+    if not create_if_missing:
+        logger.info(
+            f"ℹ️  Nutze ephemeral IP" if LANGUAGE == 'DE' else "ℹ️  Using ephemeral IP"
+        )
+        return None
+
     logger.info(f"🔄 {t('reserved_ip_creating')}")
 
     try:
@@ -856,8 +872,6 @@ def validate_configuration():
 def main():
     """Main function to continuously attempt instance creation."""
 
-    global RESERVED_PUBLIC_IP
-
     logger.info("=" * 80)
     logger.info(t("title"))
     logger.info("=" * 80)
@@ -910,45 +924,21 @@ def main():
         logger.warning(f"Could not fetch AD names: {str(e)}")
         full_ad_names = AVAILABILITY_DOMAINS
 
-    # Ask about reserved IP
+    # Reserved IP: Automatisch pruefen ob eine existiert
     logger.info("")
-    # Check if Reserved IP OCID is configured in config file
     configured_ip_ocid = CONFIG_FILE.get("reserved_public_ip_ocid", "").strip()
 
-    # Auto-decide based on config: If IP OCID is set, use reserved IP without asking
-    if configured_ip_ocid:
-        RESERVED_PUBLIC_IP = True
-        logger.info("=" * 80)
-        logger.info(f"ℹ️  Using configured reserved IP OCID from config")
-        logger.info("=" * 80)
-    else:
-        # Only ask interactively if no IP OCID is configured and we have a TTY
-        if sys.stdin.isatty():
-            logger.info("=" * 80)
-            logger.info(f"ℹ️  {t('reserved_ip_info')}")
-            logger.info(f"ℹ️  {t('reserved_ip_yes')}")
-            logger.info("=" * 80)
-            RESERVED_PUBLIC_IP = ask_yes_no(t("reserved_ip_prompt"))
-        else:
-            # Non-interactive mode (background): Don't use reserved IP
-            RESERVED_PUBLIC_IP = False
-            logger.info("=" * 80)
-            logger.info(f"ℹ️  Non-interactive mode: Using ephemeral IP")
-            logger.info("=" * 80)
+    # Automatisch nach vorhandener Reserved IP suchen (keine Frage mehr)
+    logger.info("=" * 80)
+    logger.info(f"ℹ️  {t('reserved_ip_info')}")
+    logger.info("=" * 80)
 
-    reserved_ip_obj = None
-    reserved_ip_id = None
-
-    if RESERVED_PUBLIC_IP:
-        # Use the configured_ip_ocid from above (already loaded)
-        if not configured_ip_ocid:
-            configured_ip_ocid = None
-
-        reserved_ip_obj = get_or_create_reserved_ip(
-            network_client, COMPARTMENT_ID, reserved_ip_ocid=configured_ip_ocid
-        )
-        if reserved_ip_obj:
-            reserved_ip_id = reserved_ip_obj.id
+    reserved_ip_obj = get_or_create_reserved_ip(
+        network_client, COMPARTMENT_ID,
+        reserved_ip_ocid=configured_ip_ocid if configured_ip_ocid else None,
+        create_if_missing=False  # Nur nutzen wenn vorhanden, nicht erstellen
+    )
+    reserved_ip_id = reserved_ip_obj.id if reserved_ip_obj else None
 
     logger.info("")
 

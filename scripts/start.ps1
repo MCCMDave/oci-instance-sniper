@@ -106,6 +106,40 @@ function Ensure-SshKey {
     return $false
 }
 
+# ============================================
+# SPRACHAUSWAHL
+# ============================================
+function Ensure-Language {
+    # Bereits in Config?
+    if ($config.language -and $config.language -ne "") {
+        return
+    }
+
+    Clear-Host
+    Write-Host ""
+    Write-Host "  ============================================" -ForegroundColor Cyan
+    Write-Host "    LANGUAGE / SPRACHE" -ForegroundColor Cyan
+    Write-Host "  ============================================" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "  [1] English" -ForegroundColor Yellow
+    Write-Host "  [2] Deutsch" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "  Auswahl: " -NoNewline
+
+    $choice = Get-Key
+    Write-Host $choice
+
+    $lang = if ($choice -eq "2") { "DE" } else { "EN" }
+
+    $config | Add-Member -NotePropertyName "language" -NotePropertyValue $lang -Force
+    $config | ConvertTo-Json -Depth 3 | Set-Content $configFile -Encoding UTF8
+
+    Write-Host ""
+    $msg = if ($lang -eq "DE") { "Deutsch gewaehlt" } else { "English selected" }
+    Write-Host "  [OK] $msg" -ForegroundColor Green
+    Start-Sleep -Seconds 1
+}
+
 # Konfigurierte Regionen als Array
 $configuredRegions = @()
 foreach ($prop in $regionsData.PSObject.Properties) {
@@ -330,6 +364,9 @@ if (-not (Ensure-SshKey)) {
     Write-Host "  Kein SSH-Key konfiguriert. Beende." -ForegroundColor Red
     exit 1
 }
+
+# Sprache waehlen (einmalig)
+Ensure-Language
 
 # Hauptschleife
 while ($true) {
