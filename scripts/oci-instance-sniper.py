@@ -311,7 +311,7 @@ TRANSLATIONS = {
         "reserved_ip_created": "Reserved IP created",
         "bad_request": "Bad Request - Check your configuration (Shape, Image, Subnet)",
         "auth_failed": "Authentication failed - Run: oci setup config",
-        "config_errors_found": "❌ Configuration errors found:",
+        "config_errors_found": "[X] Configuration errors found:",
         "please_run_setup": "Please run setup.ps1 first or manually configure the script:",
         "setup_command": "   powershell -ExecutionPolicy Bypass -File setup.ps1",
     },
@@ -320,22 +320,22 @@ TRANSLATIONS = {
         "target_shape": "Ziel-Shape",
         "target_config": "Ziel-Konfiguration",
         "availability_domains": "Availability Domains",
-        "retry_delay": "Wiederholungsverzögerung",
+        "retry_delay": "Wiederholungsverzoegerung",
         "max_attempts": "Max. Versuche",
         "oci_init_success": "OCI SDK erfolgreich initialisiert",
         "oci_init_failed": "OCI SDK Initialisierung fehlgeschlagen",
-        "available_ads": "Verfügbare ADs",
+        "available_ads": "Verfuegbare ADs",
         "attempt": "Versuch",
         "attempting_create": "Versuche Instanz zu erstellen in",
         "success": "ERFOLG! Instanz erstellt in",
         "instance_ocid": "Instanz OCID",
         "instance_state": "Instanz-Status",
-        "no_capacity": "Keine Kapazität in",
+        "no_capacity": "Keine Kapazitaet in",
         "error_in_ad": "Fehler in",
         "unexpected_error": "Unerwarteter Fehler in",
         "waiting_for_running": "Warte bis Instanz RUNNING Status erreicht...",
-        "instance_running": "Instanz läuft jetzt!",
-        "public_ip": "Öffentliche IP",
+        "instance_running": "Instanz laeuft jetzt!",
+        "public_ip": "Oeffentliche IP",
         "private_ip": "Private IP",
         "ssh_command": "SSH Befehl",
         "ssh_config_generated": "SSH Config-Datei generiert",
@@ -344,25 +344,29 @@ TRANSLATIONS = {
         "instance_created_title": "INSTANZ ERFOLGREICH ERSTELLT!",
         "instance_details": "Instanz-Details",
         "ssh_connection_info": "SSH VERBINDUNGSINFO",
-        "next_steps": "Nächste Schritte",
+        "next_steps": "Naechste Schritte",
         "step_1": "1. SSH Verbindung mit obigem Befehl",
         "step_2": "2. System aktualisieren: sudo apt update && sudo apt upgrade -y",
         "step_3": "3. Docker installieren: curl -fsSL https://get.docker.com | sh",
         "step_4": "4. Nextcloud deployen!",
-        "waiting_before_retry": "Warte {seconds} Sekunden vor nächstem Versuch...",
-        "max_attempts_reached": "Max. Versuche ({attempts}) erreicht. Keine Kapazität gefunden.",
+        "waiting_before_retry": "Warte {seconds} Sekunden vor naechstem Versuch...",
+        "max_attempts_reached": "Max. Versuche ({attempts}) erreicht. Keine Kapazitaet gefunden.",
         "script_can_restart": "Das Skript kann jederzeit neu gestartet werden.",
         "script_interrupted": "Skript durch Benutzer unterbrochen (Ctrl+C)",
         "fatal_error": "Fataler Fehler",
-        "reserved_ip_prompt": "Möchten Sie eine RESERVIERTE öffentliche IP erstellen? (Empfohlen für SSH Config)",
+        "reserved_ip_prompt": "Moechten Sie eine RESERVIERTE oeffentliche IP erstellen?",
         "reserved_ip_info": "Reservierte IP bleibt gleich auch nach Instanz Stop/Start",
-        "reserved_ip_yes": "Empfohlen wenn Sie SSH Config (~/.ssh/config) nutzen möchten",
-        "reserved_ip_creating": "Erstelle reservierte öffentliche IP...",
+        "reserved_ip_yes": "Empfohlen wenn Sie SSH Config (~/.ssh/config) nutzen moechten",
+        "reserved_ip_creating": "Erstelle reservierte oeffentliche IP...",
         "reserved_ip_created": "Reservierte IP erstellt",
-        "bad_request": "Ungültige Anfrage - Prüfen Sie Ihre Konfiguration (Shape, Image, Subnet)",
-        "auth_failed": "Authentifizierung fehlgeschlagen - Führen Sie aus: oci setup config",
-        "config_errors_found": "❌ Konfigurationsfehler gefunden:",
-        "please_run_setup": "Bitte führen Sie zuerst setup.ps1 aus oder konfigurieren Sie das Script manuell:",
+        "reserved_ip_checking": "Pruefe auf vorhandene reservierte IPs...",
+        "reserved_ip_found": "Reservierte IP gefunden",
+        "reserved_ip_all_assigned": "Alle reservierten IPs sind bereits zugewiesen",
+        "reserved_ip_ephemeral": "Nutze ephemeral IP...",
+        "bad_request": "Ungueltige Anfrage - Pruefen Sie Ihre Konfiguration (Shape, Image, Subnet)",
+        "auth_failed": "Authentifizierung fehlgeschlagen - Fuehren Sie aus: oci setup config",
+        "config_errors_found": "Konfigurationsfehler gefunden:",
+        "please_run_setup": "Bitte fuehren Sie zuerst setup.ps1 aus oder konfigurieren Sie das Script manuell:",
         "setup_command": "   powershell -ExecutionPolicy Bypass -File setup.ps1",
     },
 }
@@ -479,7 +483,7 @@ def send_email_notification(instance_data, public_ip, private_ip):
 
     try:
         msg = MIMEMultipart("alternative")
-        msg["Subject"] = "✅ OCI Instance Successfully Created!"
+        msg["Subject"] = "[OK] OCI Instance Successfully Created!"
         msg["From"] = EMAIL_FROM
         msg["To"] = EMAIL_TO
 
@@ -497,7 +501,7 @@ Instance Details:
 SSH Command:
 ssh ubuntu@{public_ip}
 
-Status: RUNNING ✅
+Status: RUNNING [OK]
 Created at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
 Next Steps:
@@ -521,7 +525,7 @@ Sent by OCI Instance Sniper
         logger.info(f"📧 {t('email_sent')}: {EMAIL_TO}")
 
     except Exception as e:
-        logger.warning(f"⚠️  {t('email_failed')}: {str(e)}")
+        logger.warning(f"[!]  {t('email_failed')}: {str(e)}")
 
 
 def generate_ssh_config(public_ip, instance_name):
@@ -546,13 +550,13 @@ Host oci
             f.write(config_content)
         logger.info(f"📝 {t('ssh_config_generated')}: ssh-config-oci.txt")
     except Exception as e:
-        logger.warning(f"⚠️  Could not write SSH config file: {str(e)}")
+        logger.warning(f"[!]  Could not write SSH config file: {str(e)}")
 
 
 def wait_for_instance_running(compute_client, instance_id, network_client, timeout=600):
     """Wait for instance to reach RUNNING state and get IP addresses"""
 
-    logger.info(f"⏳ {t('waiting_for_running')}")
+    logger.info(f"[...] {t('waiting_for_running')}")
 
     start_time = time.time()
     elapsed = 0
@@ -563,7 +567,7 @@ def wait_for_instance_running(compute_client, instance_id, network_client, timeo
             elapsed = int(time.time() - start_time)
 
             if instance.lifecycle_state == "RUNNING":
-                logger.info(f"✅ {t('instance_running')}")
+                logger.info(f"[OK] {t('instance_running')}")
 
                 # Get VNIC info for IP addresses
                 try:
@@ -581,7 +585,7 @@ def wait_for_instance_running(compute_client, instance_id, network_client, timeo
                     return instance, None, None
 
             logger.info(
-                f"⏳ {t('instance_state')}: {instance.lifecycle_state} ({elapsed}s)"
+                f"[...] {t('instance_state')}: {instance.lifecycle_state} ({elapsed}s)"
             )
             time.sleep(10)
 
@@ -589,7 +593,7 @@ def wait_for_instance_running(compute_client, instance_id, network_client, timeo
             logger.warning(f"Error checking instance status: {str(e)}")
             time.sleep(10)
 
-    logger.warning(f"⚠️  Timeout waiting for RUNNING state ({timeout}s)")
+    logger.warning(f"[!]  Timeout waiting for RUNNING state ({timeout}s)")
     return None, None, None
 
 
@@ -617,31 +621,31 @@ def get_or_create_reserved_ip(
     if reserved_ip_ocid:
         try:
             logger.info(
-                f"🔍 {t('reserved_ip_checking') if LANGUAGE == 'DE' else 'Using configured reserved IP OCID...'}"
+                f"[?] {t('reserved_ip_checking') if LANGUAGE == 'DE' else 'Using configured reserved IP OCID...'}"
             )
             reserved_ip = network_client.get_public_ip(reserved_ip_ocid).data
 
             if reserved_ip.lifecycle_state == "AVAILABLE":
                 logger.info(
-                    f"✅ {t('reserved_ip_found') if LANGUAGE == 'DE' else 'Using reserved IP from config'}: {reserved_ip.ip_address} ({reserved_ip.display_name})"
+                    f"[OK] {t('reserved_ip_found') if LANGUAGE == 'DE' else 'Using reserved IP from config'}: {reserved_ip.ip_address} ({reserved_ip.display_name})"
                 )
                 return reserved_ip
             else:
                 logger.warning(
-                    f"⚠️  Reserved IP from config is already assigned: {reserved_ip.ip_address}"
+                    f"[!]  Reserved IP from config is already assigned: {reserved_ip.ip_address}"
                 )
                 logger.info(
-                    f"ℹ️  {t('reserved_ip_ephemeral') if LANGUAGE == 'DE' else 'Continuing with ephemeral IP...'}"
+                    f"[i]  {t('reserved_ip_ephemeral') if LANGUAGE == 'DE' else 'Continuing with ephemeral IP...'}"
                 )
                 return None
 
         except Exception as e:
-            logger.error(f"❌ Could not get reserved IP from config: {str(e)}")
+            logger.error(f"[X] Could not get reserved IP from config: {str(e)}")
 
     # Option 2: Find any available reserved IP in compartment
     try:
         logger.info(
-            f"🔍 {t('reserved_ip_checking') if LANGUAGE == 'DE' else 'Checking for available reserved IPs...'}"
+            f"[?] {t('reserved_ip_checking') if LANGUAGE == 'DE' else 'Checking for available reserved IPs...'}"
         )
 
         public_ips = network_client.list_public_ips(
@@ -654,31 +658,31 @@ def get_or_create_reserved_ip(
         if available_ips:
             reserved_ip = available_ips[0]  # Use the first available one
             logger.info(
-                f"✅ {t('reserved_ip_found') if LANGUAGE == 'DE' else 'Found existing reserved IP'}: {reserved_ip.ip_address} ({reserved_ip.display_name})"
+                f"[OK] {t('reserved_ip_found') if LANGUAGE == 'DE' else 'Found existing reserved IP'}: {reserved_ip.ip_address} ({reserved_ip.display_name})"
             )
             return reserved_ip
 
         # If no available IPs found
         if public_ips:
             logger.info(
-                f"ℹ️  {t('reserved_ip_all_assigned') if LANGUAGE == 'DE' else 'All reserved IPs are currently assigned'}"
+                f"[i]  {t('reserved_ip_all_assigned') if LANGUAGE == 'DE' else 'All reserved IPs are currently assigned'}"
             )
         else:
             logger.info(
-                f"ℹ️  Keine reservierte IP gefunden" if LANGUAGE == 'DE' else "ℹ️  No reserved IPs found"
+                f"[i]  Keine reservierte IP gefunden" if LANGUAGE == 'DE' else "[i]  No reserved IPs found"
             )
 
     except Exception as e:
-        logger.warning(f"⚠️  Could not check for existing IPs: {str(e)}")
+        logger.warning(f"[!]  Could not check for existing IPs: {str(e)}")
 
     # Option 3: Create a new reserved IP (only if allowed)
     if not create_if_missing:
         logger.info(
-            f"ℹ️  Nutze ephemeral IP" if LANGUAGE == 'DE' else "ℹ️  Using ephemeral IP"
+            f"[i]  Nutze ephemeral IP" if LANGUAGE == 'DE' else "[i]  Using ephemeral IP"
         )
         return None
 
-    logger.info(f"🔄 {t('reserved_ip_creating')}")
+    logger.info(f"[~] {t('reserved_ip_creating')}")
 
     try:
         reserved_ip_details = oci.core.models.CreatePublicIpDetails(
@@ -688,14 +692,14 @@ def get_or_create_reserved_ip(
         )
 
         reserved_ip = network_client.create_public_ip(reserved_ip_details).data
-        logger.info(f"✅ {t('reserved_ip_created')}: {reserved_ip.ip_address}")
-        logger.info(f"💡 Tip: Add this OCID to config to reuse: {reserved_ip.id}")
+        logger.info(f"[OK] {t('reserved_ip_created')}: {reserved_ip.ip_address}")
+        logger.info(f"[*] Tip: Add this OCID to config to reuse: {reserved_ip.id}")
         return reserved_ip
 
     except Exception as e:
-        logger.error(f"❌ Error creating reserved IP: {str(e)}")
+        logger.error(f"[X] Error creating reserved IP: {str(e)}")
         logger.info(
-            f"ℹ️  {t('reserved_ip_continuing') if LANGUAGE == 'DE' else 'Continuing with ephemeral IP...'}"
+            f"[i]  {t('reserved_ip_continuing') if LANGUAGE == 'DE' else 'Continuing with ephemeral IP...'}"
         )
         return None
 
@@ -762,7 +766,7 @@ def try_create_instance(compute_client, availability_domain, reserved_ip_id=None
             compute_client, instance_details, availability_domain
         )
 
-        logger.info(f"✅ {t('success')} {availability_domain}!")
+        logger.info(f"[OK] {t('success')} {availability_domain}!")
         logger.info(f"{t('instance_ocid')}: {response.data.id}")
         logger.info(f"{t('instance_state')}: {response.data.lifecycle_state}")
 
@@ -770,16 +774,16 @@ def try_create_instance(compute_client, availability_domain, reserved_ip_id=None
 
     except oci.exceptions.ServiceError as e:
         if e.status == 500 and "Out of host capacity" in e.message:
-            logger.warning(f"⏳ {t('no_capacity')} {availability_domain}: {e.message}")
+            logger.warning(f"[...] {t('no_capacity')} {availability_domain}: {e.message}")
             return False, None
         elif e.status == 400:
-            logger.error(f"❌ {t('bad_request')} {availability_domain}: {e.message}")
+            logger.error(f"[X] {t('bad_request')} {availability_domain}: {e.message}")
             return False, None
         elif e.status == 401:
-            logger.error(f"❌ {t('auth_failed')}: {e.message}")
+            logger.error(f"[X] {t('auth_failed')}: {e.message}")
             sys.exit(1)
         else:
-            logger.error(f"❌ {t('error_in_ad')} {availability_domain}: {e.message}")
+            logger.error(f"[X] {t('error_in_ad')} {availability_domain}: {e.message}")
             return False, None
 
     except (
@@ -790,12 +794,12 @@ def try_create_instance(compute_client, availability_domain, reserved_ip_id=None
     ) as e:
         # Network errors after all retries exhausted
         logger.error(
-            f"❌ Network error in {availability_domain} after retries: {str(e)}"
+            f"[X] Network error in {availability_domain} after retries: {str(e)}"
         )
         return False, None
 
     except Exception as e:
-        logger.error(f"❌ {t('unexpected_error')} {availability_domain}: {str(e)}")
+        logger.error(f"[X] {t('unexpected_error')} {availability_domain}: {str(e)}")
         return False, None
 
 
@@ -893,19 +897,19 @@ def main():
         compute_client = oci.core.ComputeClient(config)
         network_client = oci.core.VirtualNetworkClient(config)
         identity_client = oci.identity.IdentityClient(config)
-        logger.info(f"✅ {t('oci_init_success')}")
+        logger.info(f"[OK] {t('oci_init_success')}")
     except Exception as e:
-        logger.error(f"❌ {t('oci_init_failed')}: {str(e)}")
+        logger.error(f"[X] {t('oci_init_failed')}: {str(e)}")
         if LANGUAGE == "DE":
             logger.error("\n" + "=" * 70)
-            logger.error("📋 Du benötigst folgende Informationen:")
+            logger.error("Du benoetigst folgende Informationen:")
             logger.error(
-                "   - User OCID (cloud.oracle.com → Benutzer-Symbol → Mein Profil)"
+                "   - User OCID (cloud.oracle.com -> Benutzer-Symbol -> Mein Profil)"
             )
-            logger.error("   - Tenancy OCID (Benutzer-Symbol → Tenancy: [Name])")
+            logger.error("   - Tenancy OCID (Benutzer-Symbol -> Tenancy: [Name])")
             logger.error("   - Region (z.B. eu-frankfurt-1)")
             logger.error("=" * 70)
-            logger.error("\n🔧 Führe aus: oci setup config")
+            logger.error("\nFuehre aus: oci setup config")
             logger.error(
                 "\nHinweis: Die folgenden Eingabeaufforderungen sind auf Englisch"
             )
@@ -930,7 +934,7 @@ def main():
 
     # Automatisch nach vorhandener Reserved IP suchen (keine Frage mehr)
     logger.info("=" * 80)
-    logger.info(f"ℹ️  {t('reserved_ip_info')}")
+    logger.info(f"[i]  {t('reserved_ip_info')}")
     logger.info("=" * 80)
 
     reserved_ip_obj = get_or_create_reserved_ip(
@@ -971,7 +975,7 @@ def main():
                 f"{t('attempt')} {attempt}/{MAX_ATTEMPTS} ({progress_pct:.1f}%) - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
             )
             if eta:
-                logger.info(f"⏱️  Running: {elapsed_time/3600:.1f}h | ETA: {eta.strftime('%H:%M')}")
+                logger.info(f"[t]  Running: {elapsed_time/3600:.1f}h | ETA: {eta.strftime('%H:%M')}")
             logger.info(f"{'='*80}")
 
             # Try availability domains in parallel (max 3 workers for 3 ADs)
@@ -998,7 +1002,7 @@ def main():
                                 f.cancel()
                             break
                     except Exception as e:
-                        logger.error(f"❌ Exception in parallel AD check for {ad}: {str(e)}")
+                        logger.error(f"[X] Exception in parallel AD check for {ad}: {str(e)}")
 
             if success:
                 # Wait for instance to be RUNNING
@@ -1011,7 +1015,7 @@ def main():
                     public_ip = reserved_ip_obj.ip_address
 
                 logger.info("\n" + "=" * 80)
-                logger.info(f"🎉 {t('instance_created_title')}")
+                logger.info(f"[!!!] {t('instance_created_title')}")
                 logger.info("=" * 80)
                 logger.info(f"{t('instance_details')}:")
                 logger.info(f"  - Name: {instance.display_name}")
@@ -1092,13 +1096,13 @@ def main():
                 time.sleep(retry_delay)
 
         logger.warning(
-            f"\n❌ {t('max_attempts_reached').format(attempts=MAX_ATTEMPTS)}"
+            f"\n[X] {t('max_attempts_reached').format(attempts=MAX_ATTEMPTS)}"
         )
         logger.info(t("script_can_restart"))
         return 1
 
     except KeyboardInterrupt:
-        logger.info(f"\n\n⚠️  {t('script_interrupted')}")
+        logger.info(f"\n\n[!]  {t('script_interrupted')}")
         logger.info(t("script_can_restart"))
         return 130  # Standard exit code for SIGINT
 
@@ -1110,9 +1114,9 @@ if __name__ == "__main__":
     try:
         sys.exit(main())
     except KeyboardInterrupt:
-        logger.info(f"\n\n⚠️  {t('script_interrupted')}")
+        logger.info(f"\n\n[!]  {t('script_interrupted')}")
         logger.info(t("script_can_restart"))
         sys.exit(0)
     except Exception as e:
-        logger.error(f"\n❌ {t('fatal_error')}: {str(e)}")
+        logger.error(f"\n[X] {t('fatal_error')}: {str(e)}")
         sys.exit(1)
