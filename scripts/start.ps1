@@ -43,6 +43,7 @@ function Show-Menu {
     Write-Host ""
     Write-Host "  ----------------------------------------" -ForegroundColor DarkGray
     Write-Option "A" "Alle Regionen gleichzeitig" "(parallel)"
+    Write-Option "L" "Logs anzeigen"
     Write-Option "S" "Setup neue Region"
     Write-Option "0" "Beenden"
     Write-Host ""
@@ -88,6 +89,47 @@ function Start-AllRegions {
     Write-Host "  Logs in: $ProjectRoot\logs\" -ForegroundColor DarkGray
     Write-Host "`n  Druecke eine Taste..." -ForegroundColor DarkGray
     $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+}
+
+function Show-Logs {
+    Write-Header "Logs"
+
+    $logsDir = Join-Path $ProjectRoot "logs"
+    if (-not (Test-Path $logsDir)) {
+        Write-Host "  Keine Logs vorhanden." -ForegroundColor Yellow
+        Start-Sleep -Seconds 2
+        return
+    }
+
+    $logs = Get-ChildItem $logsDir -Filter "*.log" | Sort-Object LastWriteTime -Descending | Select-Object -First 10
+
+    if ($logs.Count -eq 0) {
+        Write-Host "  Keine Logs vorhanden." -ForegroundColor Yellow
+        Start-Sleep -Seconds 2
+        return
+    }
+
+    $i = 1
+    foreach ($log in $logs) {
+        $size = [math]::Round($log.Length / 1KB, 1)
+        Write-Option $i $log.Name "$($size) KB"
+        $i++
+    }
+    Write-Host ""
+
+    $choice = Read-Host "  Log oeffnen (oder 0 fuer Abbruch)"
+    if ($choice -eq "0" -or $choice -eq "") { return }
+
+    $idx = [int]$choice - 1
+    if ($idx -ge 0 -and $idx -lt $logs.Count) {
+        $selectedLog = $logs[$idx].FullName
+        Write-Host ""
+        Write-Host "  === Letzte 30 Zeilen ===" -ForegroundColor Cyan
+        Get-Content $selectedLog -Tail 30
+        Write-Host ""
+        Write-Host "  Druecke eine Taste..." -ForegroundColor DarkGray
+        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    }
 }
 
 function Setup-Region {
@@ -174,6 +216,7 @@ while ($true) {
     switch ($choice.ToUpper()) {
         "0" { exit }
         "A" { Start-AllRegions }
+        "L" { Show-Logs }
         "S" { Setup-Region }
         default {
             $idx = [int]$choice - 1
