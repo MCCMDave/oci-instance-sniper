@@ -1,31 +1,17 @@
 # OCI Instance Sniper - Start Menu
-# Einfaches Menue zur Region-Auswahl und Start
-
 $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ProjectRoot = Split-Path -Parent $ScriptDir
 
-# Farben
-function Write-Header { param($text) Write-Host "`n$('=' * 60)" -ForegroundColor Cyan; Write-Host "  $text" -ForegroundColor Cyan; Write-Host "$('=' * 60)`n" -ForegroundColor Cyan }
-function Write-Option { param($num, $text, $info) Write-Host "  [$num] " -NoNewline -ForegroundColor Yellow; Write-Host "$text" -NoNewline; if ($info) { Write-Host " - $info" -ForegroundColor DarkGray } else { Write-Host "" } }
-
-# Single-Key Input
-function Get-SingleKey {
-    Write-Host "  Auswahl: " -NoNewline -ForegroundColor White
-    $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-    Write-Host $key.Character
-    return $key.Character
-}
-
 # Regionen laden
 $regionsFile = Join-Path $ProjectRoot "config\regions.json"
-$regions = Get-Content $regionsFile -Raw | ConvertFrom-Json
+$regionsData = Get-Content $regionsFile -Raw | ConvertFrom-Json
 
-# Konfigurierte Regionen filtern (mit subnet_id)
+# Konfigurierte Regionen als Array
 $configuredRegions = @()
-foreach ($prop in $regions.PSObject.Properties) {
-    if ($prop.Value.subnet_id -ne "") {
-        $configuredRegions += @{
+foreach ($prop in $regionsData.PSObject.Properties) {
+    if ($prop.Value.subnet_id -and $prop.Value.subnet_id -ne "") {
+        $configuredRegions += [PSCustomObject]@{
             id = $prop.Name
             name = $prop.Value.name
             image_id = $prop.Value.image_id
@@ -35,73 +21,86 @@ foreach ($prop in $regions.PSObject.Properties) {
     }
 }
 
-function Show-Menu {
-    Clear-Host
-    Write-Header "OCI Instance Sniper"
+function Get-Key {
+    $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    return $key.Character
+}
 
-    Write-Host "  Konfigurierte Regionen:" -ForegroundColor White
+function Show-MainMenu {
+    Clear-Host
+    Write-Host ""
+    Write-Host "  ============================================" -ForegroundColor Cyan
+    Write-Host "    OCI Instance Sniper" -ForegroundColor Cyan
+    Write-Host "  ============================================" -ForegroundColor Cyan
     Write-Host ""
 
-    $i = 1
-    foreach ($region in $configuredRegions) {
-        Write-Option $i $region.name $region.id
-        $i++
+    # Regionen anzeigen
+    for ($i = 0; $i -lt $configuredRegions.Count; $i++) {
+        $num = $i + 1
+        Write-Host "  [$num] $($configuredRegions[$i].name)" -ForegroundColor Yellow -NoNewline
+        Write-Host " - $($configuredRegions[$i].id)" -ForegroundColor DarkGray
     }
 
     Write-Host ""
     Write-Host "  ----------------------------------------" -ForegroundColor DarkGray
-    $nextNum = $configuredRegions.Count + 1
-    Write-Option $nextNum "Alle Regionen gleichzeitig" "(parallel)"
-    Write-Option ($nextNum + 1) "Logs anzeigen"
-    Write-Option ($nextNum + 2) "Setup neue Region"
-    Write-Option "0" "Beenden"
+    Write-Host "  [8] Logs anzeigen" -ForegroundColor Yellow
+    Write-Host "  [9] Setup neue Region" -ForegroundColor Yellow
+    Write-Host "  [0] Beenden" -ForegroundColor Yellow
     Write-Host ""
+    Write-Host "  Auswahl: " -NoNewline
 }
 
 function Start-Sniper {
     param($Region, [switch]$Background)
 
     $pythonScript = Join-Path $ScriptDir "oci-instance-sniper.py"
-    $logFile = Join-Path $ProjectRoot "logs\$($Region.id)_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
-
-    # Logs-Ordner erstellen
     $logsDir = Join-Path $ProjectRoot "logs"
     if (-not (Test-Path $logsDir)) { New-Item -ItemType Directory -Path $logsDir | Out-Null }
 
-    # Umgebungsvariablen setzen
+    $logFile = Join-Path $logsDir "$($Region.id)_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
+
     $env:OCI_REGION = $Region.id
     $env:OCI_IMAGE_ID = $Region.image_id
     $env:OCI_SUBNET_ID = $Region.subnet_id
     $env:OCI_COMPARTMENT_ID = $Region.compartment_id
-    $env:SNIPER_LOG_FILE = $logFile
 
-    Write-Host "`n  Starte Sniper fuer $($Region.name)..." -ForegroundColor Green
+    Write-Host ""
+    Write-Host "  Starte $($Region.name)..." -ForegroundColor Green
     Write-Host "  Log: $logFile" -ForegroundColor DarkGray
 
     if ($Background) {
         Start-Process -FilePath "python" -ArgumentList $pythonScript -WindowStyle Hidden -RedirectStandardOutput $logFile -RedirectStandardError "$logFile.err"
-        Write-Host "  [OK] Laeuft im Hintergrund" -ForegroundColor Green
+        Write-Host "  [OK] Im Hintergrund gestartet" -ForegroundColor Green
+        Write-Host "`n  Taste druecken..." -ForegroundColor DarkGray
+        $null = Get-Key
     } else {
         & python $pythonScript 2>&1 | Tee-Object -FilePath $logFile
     }
 }
 
-function Start-AllRegions {
-    Write-Host "`n  Starte alle konfigurierten Regionen im Hintergrund..." -ForegroundColor Green
+function Show-ModeMenu {
+    param($Region)
+    Write-Host ""
+    Write-Host "  [1] Vordergrund (sichtbar)" -ForegroundColor Yellow
+    Write-Host "  [2] Hintergrund (versteckt)" -ForegroundColor Yellow
+    Write-Host "  [0] Abbrechen" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "  Auswahl: " -NoNewline
 
-    foreach ($region in $configuredRegions) {
-        Start-Sniper -Region $region -Background
-        Start-Sleep -Milliseconds 500
+    $mode = Get-Key
+    Write-Host $mode
+
+    switch ($mode) {
+        "1" { Start-Sniper -Region $Region }
+        "2" { Start-Sniper -Region $Region -Background }
     }
-
-    Write-Host "`n  [OK] Alle Regionen gestartet!" -ForegroundColor Green
-    Write-Host "  Logs in: $ProjectRoot\logs\" -ForegroundColor DarkGray
-    Write-Host "`n  Druecke eine Taste..." -ForegroundColor DarkGray
-    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 }
 
 function Show-Logs {
-    Write-Header "Logs"
+    Clear-Host
+    Write-Host ""
+    Write-Host "  === Logs ===" -ForegroundColor Cyan
+    Write-Host ""
 
     $logsDir = Join-Path $ProjectRoot "logs"
     if (-not (Test-Path $logsDir)) {
@@ -110,7 +109,7 @@ function Show-Logs {
         return
     }
 
-    $logs = Get-ChildItem $logsDir -Filter "*.log" | Sort-Object LastWriteTime -Descending | Select-Object -First 10
+    $logs = @(Get-ChildItem $logsDir -Filter "*.log" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 9)
 
     if ($logs.Count -eq 0) {
         Write-Host "  Keine Logs vorhanden." -ForegroundColor Yellow
@@ -118,69 +117,82 @@ function Show-Logs {
         return
     }
 
-    $i = 1
-    foreach ($log in $logs) {
-        $size = [math]::Round($log.Length / 1KB, 1)
-        Write-Option $i $log.Name "$($size) KB"
-        $i++
+    for ($i = 0; $i -lt $logs.Count; $i++) {
+        $num = $i + 1
+        $size = [math]::Round($logs[$i].Length / 1KB, 1)
+        Write-Host "  [$num] $($logs[$i].Name)" -ForegroundColor Yellow -NoNewline
+        Write-Host " ($size KB)" -ForegroundColor DarkGray
     }
-    Write-Host ""
 
-    Write-Option "0" "Zurueck"
-    $choice = Get-SingleKey
+    Write-Host ""
+    Write-Host "  [0] Zurueck" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "  Auswahl: " -NoNewline
+
+    $choice = Get-Key
+    Write-Host $choice
+
     if ($choice -eq "0") { return }
 
-    $idx = [int]$choice - 1
+    $idx = [int]::Parse($choice) - 1
     if ($idx -ge 0 -and $idx -lt $logs.Count) {
-        $selectedLog = $logs[$idx].FullName
         Write-Host ""
         Write-Host "  === Letzte 30 Zeilen ===" -ForegroundColor Cyan
-        Get-Content $selectedLog -Tail 30
         Write-Host ""
-        Write-Host "  Druecke eine Taste..." -ForegroundColor DarkGray
-        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        Get-Content $logs[$idx].FullName -Tail 30
+        Write-Host ""
+        Write-Host "  Taste druecken..." -ForegroundColor DarkGray
+        $null = Get-Key
     }
 }
 
 function Setup-Region {
-    Write-Header "Neue Region einrichten"
+    Clear-Host
+    Write-Host ""
+    Write-Host "  === Neue Region ===" -ForegroundColor Cyan
+    Write-Host ""
 
-    # Nicht konfigurierte Regionen zeigen
     $unconfigured = @()
-    foreach ($prop in $regions.PSObject.Properties) {
-        if ($prop.Value.subnet_id -eq "") {
-            $unconfigured += @{ id = $prop.Name; name = $prop.Value.name }
+    foreach ($prop in $regionsData.PSObject.Properties) {
+        if (-not $prop.Value.subnet_id -or $prop.Value.subnet_id -eq "") {
+            $unconfigured += [PSCustomObject]@{ id = $prop.Name; name = $prop.Value.name }
         }
     }
 
     if ($unconfigured.Count -eq 0) {
-        Write-Host "  Alle Regionen sind bereits konfiguriert!" -ForegroundColor Yellow
+        Write-Host "  Alle Regionen konfiguriert!" -ForegroundColor Yellow
         Start-Sleep -Seconds 2
         return
     }
 
-    $i = 1
-    foreach ($r in $unconfigured) {
-        Write-Option $i $r.name $r.id
-        $i++
+    for ($i = 0; $i -lt $unconfigured.Count; $i++) {
+        $num = $i + 1
+        Write-Host "  [$num] $($unconfigured[$i].name)" -ForegroundColor Yellow -NoNewline
+        Write-Host " - $($unconfigured[$i].id)" -ForegroundColor DarkGray
     }
-    Write-Host ""
 
-    Write-Option "0" "Abbrechen"
-    $choice = Get-SingleKey
+    Write-Host ""
+    Write-Host "  [0] Abbrechen" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "  Auswahl: " -NoNewline
+
+    $choice = Get-Key
+    Write-Host $choice
+
     if ($choice -eq "0") { return }
 
-    $idx = [int]$choice - 1
+    $idx = [int]::Parse($choice) - 1
     if ($idx -lt 0 -or $idx -ge $unconfigured.Count) { return }
 
-    $selectedRegion = $unconfigured[$idx]
+    $sel = $unconfigured[$idx]
 
-    Write-Host "`n  Region: $($selectedRegion.name) ($($selectedRegion.id))" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "  Du brauchst aus der OCI Console:" -ForegroundColor Yellow
-    Write-Host "  1. Compartment OCID (Tenancy oder Sub-Compartment)"
-    Write-Host "  2. Subnet OCID (VCN muss in der Region existieren)"
-    Write-Host "  3. Image OCID (Ubuntu 24.04 aarch64)"
+    Write-Host "  Region: $($sel.name)" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "  Aus OCI Console:" -ForegroundColor DarkGray
+    Write-Host "  - Compartment OCID"
+    Write-Host "  - Subnet OCID"
+    Write-Host "  - Image OCID (Ubuntu 24.04 aarch64)"
     Write-Host ""
 
     $compartment = Read-Host "  Compartment OCID"
@@ -188,27 +200,27 @@ function Setup-Region {
     $image = Read-Host "  Image OCID"
 
     if ($compartment -eq "" -or $subnet -eq "" -or $image -eq "") {
-        Write-Host "  [FEHLER] Alle Felder sind Pflicht!" -ForegroundColor Red
+        Write-Host "  [FEHLER] Alle Felder Pflicht!" -ForegroundColor Red
         Start-Sleep -Seconds 2
         return
     }
 
-    # In regions.json speichern
-    $regions.($selectedRegion.id).compartment_id = $compartment
-    $regions.($selectedRegion.id).subnet_id = $subnet
-    $regions.($selectedRegion.id).image_id = $image
+    $regionsData.($sel.id).compartment_id = $compartment
+    $regionsData.($sel.id).subnet_id = $subnet
+    $regionsData.($sel.id).image_id = $image
 
-    $regions | ConvertTo-Json -Depth 3 | Set-Content $regionsFile -Encoding UTF8
+    $regionsData | ConvertTo-Json -Depth 3 | Set-Content $regionsFile -Encoding UTF8
 
-    Write-Host "`n  [OK] Region $($selectedRegion.name) konfiguriert!" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "  [OK] $($sel.name) konfiguriert!" -ForegroundColor Green
     Start-Sleep -Seconds 2
 
     # Reload
-    $script:regions = Get-Content $regionsFile -Raw | ConvertFrom-Json
+    $script:regionsData = Get-Content $regionsFile -Raw | ConvertFrom-Json
     $script:configuredRegions = @()
-    foreach ($prop in $regions.PSObject.Properties) {
-        if ($prop.Value.subnet_id -ne "") {
-            $script:configuredRegions += @{
+    foreach ($prop in $regionsData.PSObject.Properties) {
+        if ($prop.Value.subnet_id -and $prop.Value.subnet_id -ne "") {
+            $script:configuredRegions += [PSCustomObject]@{
                 id = $prop.Name
                 name = $prop.Value.name
                 image_id = $prop.Value.image_id
@@ -221,37 +233,18 @@ function Setup-Region {
 
 # Hauptschleife
 while ($true) {
-    Show-Menu
-    $choice = Get-SingleKey
+    Show-MainMenu
+    $choice = Get-Key
+    Write-Host $choice
 
-    $allIdx = $configuredRegions.Count + 1
-    $logsIdx = $configuredRegions.Count + 2
-    $setupIdx = $configuredRegions.Count + 3
-
-    if ($choice -eq "0") {
-        exit
-    } elseif ($choice -eq [string]$allIdx) {
-        Start-AllRegions
-    } elseif ($choice -eq [string]$logsIdx) {
-        Show-Logs
-    } elseif ($choice -eq [string]$setupIdx) {
-        Setup-Region
-    } else {
-        $idx = [int]$choice - 1
-        if ($idx -ge 0 -and $idx -lt $configuredRegions.Count) {
-            $region = $configuredRegions[$idx]
-            Write-Host ""
-            Write-Option "1" "Vordergrund" "(sichtbar, Ctrl+C zum Stoppen)"
-            Write-Option "2" "Hintergrund" "(versteckt, Log-Datei)"
-            Write-Option "0" "Abbrechen"
-            $mode = Get-SingleKey
-
-            if ($mode -eq "1") {
-                Start-Sniper -Region $region
-            } elseif ($mode -eq "2") {
-                Start-Sniper -Region $region -Background
-                Write-Host "`n  Druecke eine Taste..." -ForegroundColor DarkGray
-                $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    switch ($choice) {
+        "0" { exit }
+        "8" { Show-Logs }
+        "9" { Setup-Region }
+        default {
+            $idx = [int]::Parse($choice) - 1
+            if ($idx -ge 0 -and $idx -lt $configuredRegions.Count) {
+                Show-ModeMenu -Region $configuredRegions[$idx]
             }
         }
     }
