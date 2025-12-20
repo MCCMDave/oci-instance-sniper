@@ -1,0 +1,26 @@
+{
+  "eu-frankfurt-1": {
+    "name": "Frankfurt",
+    "image_id": "ocid1.image.oc1.eu-frankfurt-1.aaaaaaaakzxxzn5xxewosaxvv5xcptfuvobpg46cgxolvtqox54bzwzdkima",
+    "subnet_id": "ocid1.subnet.oc1.eu-frankfurt-1.aaaaaaaad5iiapdcmmqknjkrcrpjortcmohf3b3fxsvbayovkkrpinidg3tq",
+    "compartment_id": "ocid1.tenancy.oc1..aaaaaaaax6rpppokzujbk3fmq2p5kfrhnocam4qj2clhoypvjnpy42szgbmq"
+  },
+  "eu-paris-1": {
+    "name": "Paris",
+    "image_id": "",
+    "subnet_id": "",
+    "compartment_id": ""
+  },
+  "eu-amsterdam-1": {
+    "name": "Amsterdam",
+    "image_id": "",
+    "subnet_id": "",
+    "compartment_id": ""
+  },
+  "uk-london-1": {
+    "name": "London",
+    "image_id": "",
+    "subnet_id": "",
+    "compartment_id": ""
+  }
+}

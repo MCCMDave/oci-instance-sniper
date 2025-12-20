@@ -1,92 +1,111 @@
-# OCI Instance Sniper 🎯
+# OCI Instance Sniper
 
-Automatically creates ARM instances (VM.Standard.A1.Flex) in Oracle Cloud Infrastructure when capacity becomes available.
+Automatisch ARM-Instanzen (VM.Standard.A1.Flex) in Oracle Cloud erstellen sobald Kapazität verfügbar ist.
 
-**English Version** | [Deutsche Version](docs/README.de.md)
+[English](#english) | **Deutsch**
 
-## 🚀 Quick Start
-
-### Option 1: Multi-Instance Mode ⭐ NEW!
-Run multiple regions simultaneously for maximum success!
+## Schnellstart
 
 ```powershell
-# 1. Create instances for different regions
-.\scripts\multi\setup-instance.ps1
+# 1. OCI CLI einrichten (einmalig)
+oci setup config
 
-# 2. Manage all instances
-.\scripts\multi\manage-instances.ps1
+# 2. Menü starten
+.\start.bat
 ```
 
-**Perfect for:**
-- Testing multiple regions at once (Frankfurt + Paris + London)
-- Maximizing your chances of getting an ARM instance
-- Independent configs per region (different IPs, resources)
+## Menü-Optionen
 
-[📖 Multi-Instance Guide](docs/MULTI-INSTANCE.md)
+```
+============================================================
+  OCI Instance Sniper
+============================================================
 
-### Option 2: Single Instance Mode
-Traditional setup for one region:
+  Konfigurierte Regionen:
 
-```powershell
-# 1. Setup (one time)
-.\scripts\single\setup.ps1
+  [1] Frankfurt - eu-frankfurt-1
 
-# 2. Run Control Menu
-.\scripts\single\control-menu.ps1
+  ----------------------------------------
+  [A] Alle Regionen gleichzeitig (parallel)
+  [S] Setup neue Region
+  [0] Beenden
 ```
 
-The menu lets you:
-- Start in foreground (see live output)
-- Start in background (runs hidden until PC off)
-- Start via Task Scheduler (survives reboots)
-- Check status, view logs, stop script
+- **Einzelne Region:** Nummer wählen, dann Vordergrund oder Hintergrund
+- **Alle parallel:** `A` startet alle konfigurierten Regionen im Hintergrund
+- **Neue Region:** `S` führt durch Setup (Subnet + Image OCID eingeben)
 
-### Option 3: Direct Execution
-```powershell
-# Run directly in terminal
-python scripts\oci-instance-sniper.py
+## Konfiguration
+
+`config/sniper-config.json`:
+```json
+{
+  "instance_name": "oci-instance",
+  "ocpus": 2,
+  "memory_in_gbs": 12,
+  "language": "DE",
+  "email": {
+    "enabled": true,
+    "smtp_server": "smtp.gmail.com",
+    "from": "deine@email.de",
+    "to": "deine@email.de",
+    "password": "app-password"
+  }
+}
 ```
 
-The script will run for 24 hours, checking every 60 seconds.
+`config/regions.json` - Pro Region: Subnet + Image OCID
 
-## 📋 What You Need
-
-- Oracle Cloud account (Free Tier works!)
-- Windows with PowerShell
-- Python 3.8+ (auto-installed if missing)
-
-## 📚 Full Documentation
-
-For complete documentation, troubleshooting, and advanced features, see:
-- [**Multi-Instance Setup Guide** ⭐ NEW!](docs/MULTI-INSTANCE.md)
-- [**English Documentation**](docs/README.md)
-- [**Deutsche Dokumentation**](docs/README.de.md)
-- [**Encoding Rules**](docs/ENCODING-RULES.md)
-
-## 📁 Project Structure
+## Projektstruktur
 
 ```
 oci-instance-sniper/
-├── docs/                      # Documentation
-│   ├── MULTI-INSTANCE.md     # Multi-instance guide ⭐ NEW!
-│   ├── README.md             # Full English docs
-│   └── README.de.md          # Full German docs
-├── scripts/                      # Scripts
-│   ├── multi/                   # Multi-instance mode ⭐ NEW!
-│   │   ├── manage-instances.ps1 # Instance manager
-│   │   └── setup-instance.ps1   # Multi-instance setup
-│   ├── single/                  # Single-instance mode
-│   │   ├── control-menu.ps1     # Control menu
-│   │   └── setup.ps1            # Setup wizard
-│   └── oci-instance-sniper.py   # Main Python script (shared)
-├── instances/                 # Multi-instance configs ⭐ NEW!
-│   ├── frankfurt/
-│   ├── paris/
-│   └── .../
-├── config/                    # Single instance config
-└── requirements.txt          # Python dependencies
+├── config/
+│   ├── sniper-config.json
+│   └── regions.json
+├── docs/LICENSE
+├── scripts/
+│   ├── oci-instance-sniper.py
+│   └── start.ps1
+├── README.md
+├── requirements.txt
+└── start.bat
 ```
 
-## 📄 License
+---
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+# English
+
+Automatically creates ARM instances (VM.Standard.A1.Flex) in Oracle Cloud when capacity becomes available.
+
+## Quick Start
+
+```powershell
+# 1. Setup OCI CLI (once)
+oci setup config
+
+# 2. Start menu
+.\start.bat
+```
+
+## Menu Options
+
+- **Single region:** Select number, then foreground or background
+- **All parallel:** `A` starts all configured regions in background
+- **New region:** `S` guides through setup (Subnet + Image OCID)
+
+## Configuration
+
+`config/sniper-config.json` - General settings + email notification
+`config/regions.json` - Region-specific OCIDs (Subnet, Image, Compartment)
+
+## Features
+
+- Multi-region support with parallel execution
+- Background mode with logging
+- Email notification on success
+- Bilingual (DE/EN)
+
+## License
+
+Apache License 2.0

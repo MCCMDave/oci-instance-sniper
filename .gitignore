@@ -29,13 +29,11 @@ oci-config.json
 *.pem
 *.key
 
-# Logs (including rotated logs)
+# Logs
+logs/
 *.log
 *.log.*
-oci-sniper.log
-oci-sniper.log.*
-control-menu.log
-control-menu.log.*
+*.log.err
 
 # SSH Config (generated)
 ssh-config-oci.txt
@@ -54,9 +52,6 @@ ssh-config-oci.txt
 /*-backup.ps1
 backups/
 
-# Multi-instance data (instances created via setup-instance.ps1)
-instances/
-.state.json
 
 # Environment variables
 .env

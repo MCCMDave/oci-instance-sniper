@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 OCI Instance Sniper v1.4
 Automatically attempts to create an ARM instance in OCI when capacity becomes available.
@@ -48,7 +48,7 @@ import subprocess
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
+from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -251,25 +251,15 @@ MAX_ATTEMPTS = CONFIG_FILE.get(
 INSTANCE_NAME = CONFIG_FILE.get("instance_name", "oci-instance")
 
 # ============================================================================
-# EMAIL NOTIFICATIONS (OPTIONAL - Disabled by default)
+# EMAIL NOTIFICATIONS (from config/sniper-config.json)
 # ============================================================================
-# Enable email notifications to get notified when instance is ready
-# Requires Gmail App Password or other SMTP credentials
-# See README.md for setup instructions
-
-EMAIL_NOTIFICATIONS_ENABLED = False  # Set to True to enable
-
-# Gmail Configuration (only used if EMAIL_NOTIFICATIONS_ENABLED = True)
-EMAIL_FROM = "your-email@gmail.com"
-EMAIL_TO = "your-email@gmail.com"  # Can be different email
-EMAIL_PASSWORD = "your-app-password-here"  # Gmail App Password (16 chars)
-SMTP_SERVER = "smtp.gmail.com"
-SMTP_PORT = 587
-
-# Alternative SMTP providers:
-# Outlook: smtp.office365.com:587
-# GMX: mail.gmx.net:587
-# Web.de: smtp.web.de:587
+EMAIL_CONFIG = CONFIG_FILE.get("email", {})
+EMAIL_NOTIFICATIONS_ENABLED = EMAIL_CONFIG.get("enabled", False)
+SMTP_SERVER = EMAIL_CONFIG.get("smtp_server", "smtp.gmail.com")
+SMTP_PORT = EMAIL_CONFIG.get("smtp_port", 587)
+EMAIL_FROM = EMAIL_CONFIG.get("from", "")
+EMAIL_TO = EMAIL_CONFIG.get("to", "")
+EMAIL_PASSWORD = EMAIL_CONFIG.get("password", "")
 
 # ============================================================================
 # TRANSLATIONS
@@ -436,8 +426,13 @@ if sys.platform == "win32":
 # Log rotation: max 5 MB per file, keep 3 backup files
 from logging.handlers import RotatingFileHandler
 
+# Log file in project root (one level up from scripts/)
+_script_dir = os.path.dirname(os.path.abspath(__file__))
+_project_root = os.path.dirname(_script_dir)
+_log_file = os.path.join(_project_root, "oci-sniper.log")
+
 log_handler = RotatingFileHandler(
-    "oci-sniper.log",
+    _log_file,
     maxBytes=5 * 1024 * 1024,  # 5 MB
     backupCount=3,  # Keep 3 old logs (oci-sniper.log.1, .2, .3)
     encoding="utf-8"
@@ -1114,26 +1109,8 @@ def main():
 
     except KeyboardInterrupt:
         logger.info(f"\n\n⚠️  {t('script_interrupted')}")
-        logger.info("=" * 80)
-
-        # Ask user if they want to continue or exit
-        if LANGUAGE == "DE":
-            question = "Möchtest du das Script beenden?"
-        else:
-            question = "Do you want to exit the script?"
-
-        if ask_yes_no(question):
-            logger.info(t("script_can_restart"))
-            return 130  # Standard exit code for SIGINT
-        else:
-            logger.info("")
-            if LANGUAGE == "DE":
-                logger.info("▶️  Fortsetzen...")
-            else:
-                logger.info("▶️  Continuing...")
-            logger.info("=" * 80)
-            # Recursively call main() to restart the process
-            return main()
+        logger.info(t("script_can_restart"))
+        return 130  # Standard exit code for SIGINT
 
 
 if __name__ == "__main__":

@@ -2,10 +2,16 @@
   "instance_name": "oci-instance",
   "ocpus": 2,
   "memory_in_gbs": 12,
-  "image": "ubuntu24",
   "retry_delay_seconds": 60,
   "max_attempts": 1440,
-  "region": "eu-frankfurt-1",
-  "language": "EN",
-  "reserved_public_ip_ocid": ""
+  "language": "DE",
+  "reserved_public_ip_ocid": "",
+  "email": {
+    "enabled": false,
+    "smtp_server": "smtp.gmail.com",
+    "smtp_port": 587,
+    "from": "",
+    "to": "",
+    "password": ""
+  }
 }
