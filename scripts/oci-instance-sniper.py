@@ -314,6 +314,9 @@ TRANSLATIONS = {
         "config_errors_found": "[X] Configuration errors found:",
         "please_run_setup": "Please run setup.ps1 first or manually configure the script:",
         "setup_command": "   powershell -ExecutionPolicy Bypass -File setup.ps1",
+        "quota_exceeded": "SERVICE LIMIT EXCEEDED - Your A1 quota is used up!",
+        "quota_hint": "    -> Check OCI Console: Limits, Quotas and Usage\n    -> You may already have A1 instances running\n    -> Free Tier: max 4 OCPUs + 24 GB RAM total\n    -> Delete existing instances or request limit increase",
+        "quota_error_exit": "Exiting: Quota exceeded. Retrying won't help until you free up resources.",
     },
     "DE": {
         "title": "OCI Instance Sniper - Startet",
@@ -368,6 +371,9 @@ TRANSLATIONS = {
         "config_errors_found": "Konfigurationsfehler gefunden:",
         "please_run_setup": "Bitte fuehren Sie zuerst setup.ps1 aus oder konfigurieren Sie das Script manuell:",
         "setup_command": "   powershell -ExecutionPolicy Bypass -File setup.ps1",
+        "quota_exceeded": "SERVICE-LIMIT UEBERSCHRITTEN - Dein A1-Kontingent ist aufgebraucht!",
+        "quota_hint": "    -> Pruefe OCI Console: Limits, Quotas and Usage\n    -> Du hast vermutlich bereits A1-Instanzen laufen\n    -> Free Tier: max 4 OCPUs + 24 GB RAM insgesamt\n    -> Loesche bestehende Instanzen oder beantrage Limit-Erhoehung",
+        "quota_error_exit": "Beende: Kontingent ueberschritten. Wiederholen hilft nicht bis Ressourcen freigegeben werden.",
     },
 }
 
@@ -774,11 +780,20 @@ def try_create_instance(compute_client, availability_domain, reserved_ip_id=None
 
     except oci.exceptions.ServiceError as e:
         if e.status == 500 and "Out of host capacity" in e.message:
-            logger.warning(f"[...] {t('no_capacity')} {availability_domain}: {e.message}")
+            logger.warning(f"[...] {t('no_capacity')} {availability_domain}: Out of host capacity.")
             return False, None
         elif e.status == 400:
-            logger.error(f"[X] {t('bad_request')} {availability_domain}: {e.message}")
-            return False, None
+            # Check for service limit errors (quota exceeded)
+            if "service limits were exceeded" in e.message.lower():
+                logger.error(f"[X] {t('quota_exceeded')} {availability_domain}")
+                logger.error(f"    {e.message}")
+                logger.error("")
+                logger.error(t('quota_hint'))
+                # Return special code to signal quota error
+                return "QUOTA_ERROR", None
+            else:
+                logger.error(f"[X] {t('bad_request')} {availability_domain}: {e.message}")
+                return False, None
         elif e.status == 401:
             logger.error(f"[X] {t('auth_failed')}: {e.message}")
             sys.exit(1)
@@ -981,6 +996,7 @@ def main():
             # Try availability domains in parallel (max 3 workers for 3 ADs)
             success = False
             instance = None
+            quota_error = False
 
             with ThreadPoolExecutor(max_workers=min(3, len(full_ad_names))) as executor:
                 # Submit all AD attempts concurrently
@@ -994,7 +1010,13 @@ def main():
                     ad = future_to_ad[future]
                     try:
                         ad_success, ad_instance = future.result()
-                        if ad_success:
+                        if ad_success == "QUOTA_ERROR":
+                            quota_error = True
+                            # Cancel remaining futures
+                            for f in future_to_ad:
+                                f.cancel()
+                            break
+                        elif ad_success:
                             success = True
                             instance = ad_instance
                             # Cancel remaining futures
@@ -1003,6 +1025,14 @@ def main():
                             break
                     except Exception as e:
                         logger.error(f"[X] Exception in parallel AD check for {ad}: {str(e)}")
+
+            # Exit if quota exceeded - retrying won't help
+            if quota_error:
+                logger.error("")
+                logger.error("=" * 80)
+                logger.error(f"[X] {t('quota_error_exit')}")
+                logger.error("=" * 80)
+                return 1
 
             if success:
                 # Wait for instance to be RUNNING
