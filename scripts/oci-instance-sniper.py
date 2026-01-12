@@ -2,41 +2,6 @@
 """
 OCI Instance Sniper v1.4
 Automatically attempts to create an ARM instance in OCI when capacity becomes available.
-
-Author: Dave Vaupel
-Date: 2025-11-29
-
-Changelog v1.4:
-- Added interactive language selection (EN/DE) at startup with single-keypress input
-- Language selection skipped if already set in config.json
-- Single-keypress uses msvcrt.getch() on Windows (no Enter needed)
-- Fallback to standard input() on Linux/Mac
-
-Changelog v1.3:
-- Added automatic retry logic with exponential backoff for network errors
-- Added tenacity library for robust API calls
-- Fixed import ordering bug (json, os, re now properly imported)
-- Improved config validation with fallback to defaults
-- Enhanced SSH key validation with regex patterns
-- Pinned dependency versions (oci==2.133.0, tenacity==8.2.3)
-- Added GitHub Actions CI/CD pipeline
-- Added pre-commit hooks for code quality
-- Added PowerShell control menu logging
-
-Changelog v1.2:
-- Added instance status monitoring (waits for RUNNING state)
-- Added automatic public IP retrieval
-- Added SSH config generator
-- Added reserved public IP support (optional)
-- Added email notifications (optional)
-- Added bilingual support (EN/DE)
-- Improved error handling for authentication and bad requests
-
-Changelog v1.1:
-- Fixed UTF-8 encoding for Windows console (emoji support)
-- Added configuration validation on startup
-- Added SSH key validation
-- Added OCID format validation
 """
 
 import json
@@ -184,6 +149,7 @@ AVAILABILITY_DOMAINS = ["AD-1", "AD-2", "AD-3"]  # Try all ADs
 SHAPE = "VM.Standard.A1.Flex"
 OCPUS = CONFIG_FILE.get("ocpus", 2)
 MEMORY_IN_GBS = CONFIG_FILE.get("memory_in_gbs", 12)
+BOOT_VOLUME_SIZE_IN_GBS = CONFIG_FILE.get("boot_volume_size_in_gbs", 50)  # Default 50 GB, Free Tier max 200 GB
 
 # Image Configuration (Ubuntu 24.04, can be overridden via .env file)
 IMAGE_ID = os.getenv("OCI_IMAGE_ID", "ocid1.image.oc1.eu-frankfurt-1.aaaaaaaakzxxzn5xxewosaxvv5xcptfuvobpg46cgxolvtqox54bzwzdkima")
@@ -251,15 +217,16 @@ MAX_ATTEMPTS = CONFIG_FILE.get(
 INSTANCE_NAME = CONFIG_FILE.get("instance_name", "oci-instance")
 
 # ============================================================================
-# EMAIL NOTIFICATIONS (from config/sniper-config.json)
+# EMAIL NOTIFICATIONS (from .env or config/sniper-config.json)
 # ============================================================================
 EMAIL_CONFIG = CONFIG_FILE.get("email", {})
 EMAIL_NOTIFICATIONS_ENABLED = EMAIL_CONFIG.get("enabled", False)
 SMTP_SERVER = EMAIL_CONFIG.get("smtp_server", "smtp.gmail.com")
 SMTP_PORT = EMAIL_CONFIG.get("smtp_port", 587)
-EMAIL_FROM = EMAIL_CONFIG.get("from", "")
-EMAIL_TO = EMAIL_CONFIG.get("to", "")
-EMAIL_PASSWORD = EMAIL_CONFIG.get("password", "")
+# Priority: .env > config file (for security - passwords should be in .env)
+EMAIL_FROM = os.getenv("EMAIL_FROM", EMAIL_CONFIG.get("from", ""))
+EMAIL_TO = os.getenv("EMAIL_TO", EMAIL_CONFIG.get("to", ""))
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", EMAIL_CONFIG.get("password", ""))
 
 # ============================================================================
 # TRANSLATIONS
@@ -734,7 +701,9 @@ def create_instance_config(availability_domain, reserved_ip_id=None):
         create_vnic_details=create_vnic_details,
         metadata={"ssh_authorized_keys": SSH_PUBLIC_KEY},
         source_details=oci.core.models.InstanceSourceViaImageDetails(
-            image_id=IMAGE_ID, source_type="image"
+            image_id=IMAGE_ID,
+            source_type="image",
+            boot_volume_size_in_gbs=BOOT_VOLUME_SIZE_IN_GBS
         ),
     )
 
@@ -900,7 +869,7 @@ def main():
         sys.exit(1)
 
     logger.info(f"{t('target_shape')}: {SHAPE}")
-    logger.info(f"{t('target_config')}: {OCPUS} OCPUs, {MEMORY_IN_GBS} GB RAM")
+    logger.info(f"{t('target_config')}: {OCPUS} OCPUs, {MEMORY_IN_GBS} GB RAM, {BOOT_VOLUME_SIZE_IN_GBS} GB Boot Volume")
     logger.info(f"{t('availability_domains')}: {', '.join(AVAILABILITY_DOMAINS)}")
     logger.info(f"{t('retry_delay')}: {RETRY_DELAY_SECONDS} seconds")
     logger.info(f"{t('max_attempts')}: {MAX_ATTEMPTS}")

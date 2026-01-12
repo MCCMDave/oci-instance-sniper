@@ -1,17 +1,18 @@
 {
-  "instance_name": "oci-instance",
+  "instance_name": "oci",
   "ocpus": 2,
   "memory_in_gbs": 12,
+  "boot_volume_size_in_gbs": 200,
   "retry_delay_seconds": 60,
-  "max_attempts": 1440,
+  "max_attempts": 2880,
   "language": "DE",
   "reserved_public_ip_ocid": "",
   "email": {
-    "enabled": false,
+    "enabled": true,
     "smtp_server": "smtp.gmail.com",
     "smtp_port": 587,
-    "from": "",
-    "to": "",
+    "from": "mccmdave@gmail.com",
+    "to": "david_vaupel@hotmail.com",
     "password": ""
   },
   "ssh_public_key": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC9Z42YTACjHR7U85mAk99caHPUzMe1W0e0uxpyTT3662/2oWkHOpESexu0e4H2ZvMtgOtxAvdt2y8bm8+thd1AN4Ay7PjGoBvhMPFF/bHvPkHu3n07niffM0yye5jqo9DQ+XSNyxcSicsjP023NhMR+DAR1spFwr8k2wS/ZIT2uzBym6askRkZ05Bp1loEeoYiSNEdK9rzjLF7G/Av4GdS9jnFi2dcu9fckrrah0bNNxgLVsBzkS/xlmSEOYfp6iZx9b+UfZ35IMOTy5v3Ej24jFQ+cPUH+hOSIKhc6CfcEh6wwcaU0ks6yb54P9vNb4pKjx8zuMGb63t6LsQbFN3H ssh-key-2025-11-06"
